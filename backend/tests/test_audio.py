@@ -14,3 +14,11 @@ def test_ffmpeg_failure_raises():
         with pytest.raises(AudioExtractionError):
             extract_audio(Path(__file__), Path("out.wav"))  # __file__ exists, so it passes the existence check
 
+def test_calls_ffmpeg_with_correct_args():
+    with patch("backend.audio.subprocess.run") as mock_run:
+        extract_audio(Path(__file__), Path("out.wav"))
+        args = mock_run.call_args[0][0] 
+        assert "-ar" in args
+        assert "22050" in args
+        assert "-ac" in args
+        assert "1" in args
