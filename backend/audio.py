@@ -30,7 +30,7 @@ def extract_audio(video_path: Path, output_path: Path) -> None:
     
 
 if __name__ == "__main__":
-    video_path = Path("backend/video.mp4")
-    output_path = Path("backend/output.mp4")
+    video_path = Path("./tests/fixtures/video.mp4")
+    output_path = Path("./tests/fixtures/output.wav")
 
     extract_audio(video_path, output_path)
