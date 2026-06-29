@@ -80,3 +80,23 @@ def test_note_invalid_duration():
 
 # === Invalid TabData =============================================
 
+
+def test_tabdata_invalid_string():
+
+    with pytest.raises(ValidationError):
+        TabData(
+            string = 7,
+            fret = 5,
+            time = 1.5
+        ) 
+
+def test_tabdata_invalid_fret():
+
+    with pytest.raises(ValidationError):
+        TabData(
+            string = 7,
+            fret = 25,
+            time = 1.5
+        ) 
+
+# === Invalid Job =============================================
