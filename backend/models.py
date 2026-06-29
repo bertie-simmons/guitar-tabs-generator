@@ -11,11 +11,15 @@ class Note(BaseModel):
         if value <= 0:
             raise ValueError(f"pitch must be positive: {value}")
         return value
+    
+    # TODO add validator for time and duration
 
 class TabData(BaseModel):
     string : int
     fret : int
     time : float
+
+    # TODO add validtor for fret and string and time
 
 class Job(BaseModel):
     id : str
