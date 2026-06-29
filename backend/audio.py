@@ -2,9 +2,8 @@ import subprocess
 from pathlib import Path
 
 class AudioExtractionError(Exception):
-    """Exception raised when audio extraction fails with ffmpeg"""
-
     def __init__(self, message="ffmpeg error"):
+        """Exception raised when audio extraction fails with ffmpeg"""
         super().__init__(f"Audio extraction failed: {message}")
 
 
