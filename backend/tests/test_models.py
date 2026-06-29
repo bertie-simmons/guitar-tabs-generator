@@ -8,9 +8,9 @@ from pydantic import BaseModel, ValidationError
 def test_note_valid_construction():
 
     note = Note(
-        pitch=85.2,
-        start_time=0,
-        duration=1.8
+        pitch = 85.2,
+        start_time = 0,
+        duration = 1.8
     )
 
     assert note.pitch ==  85.2
@@ -18,10 +18,11 @@ def test_note_valid_construction():
     assert note.duration == 1.8
 
 def test_tabdata_valid_construction():
+
     tab = TabData(
-        string=2,
-        fret=5,
-        time=1.5
+        string = 2,
+        fret = 5,
+        time = 1.5
     )
 
     assert tab.string == 2
@@ -29,10 +30,11 @@ def test_tabdata_valid_construction():
     assert tab.time == 1.5
 
 def test_job_valid_construction():
+
     job = Job(
-        id="abc123",
-        fret="pending",
-        result=None
+        id = "abc123",
+        fret = "pending",
+        result = None
     )
 
     assert job.id == "abc123"
