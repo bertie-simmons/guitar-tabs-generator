@@ -49,5 +49,34 @@ def test_job_valid_construction():
 #         )
 #     }
 
-# === Invalid Values =============================================
+# === Invalid Note =============================================
+
+def test_note_invalid_pitch():
+
+    with pytest.raises(ValidationError):
+        Note(
+            pitch = -1,
+            start_time = 0,
+            duration = 1.8
+        )
+
+def test_note_invalid_start_time():
+
+    with pytest.raises(ValidationError):
+        Note(
+            pitch = 25.6,
+            start_time = -1,
+            duration = 1.8
+        )
+
+def test_note_invalid_duration():
+
+    with pytest.raises(ValidationError):
+        Note(
+            pitch = 25.6,
+            start_time = 0,
+            duration = -1
+        )
+
+# === Invalid TabData =============================================
 
