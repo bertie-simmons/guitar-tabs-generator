@@ -8,11 +8,22 @@ class Note(BaseModel):
 
     @field_validator("pitch")
     def validate_pitch(cls, value):
-        if value <= 0:
+        if value < 0:
             raise ValueError(f"pitch must be positive: {value}")
         return value
-    
-    # TODO add validator for time and duration
+
+    @field_validator("start_time")
+    def validate_start_time(cls, value):
+        if value < 0:
+            raise ValueError(f"start-time must be postive: {value}")
+        return value
+
+    @field_validator("duration")
+    def validate_duration(cls, value):
+        if value < 0:
+            raise ValueError(f"duration must be postive: {value}")
+        return value
+
 
 class TabData(BaseModel):
     string : int
