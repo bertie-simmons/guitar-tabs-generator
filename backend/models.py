@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Literal
 
 class Note(BaseModel):
@@ -26,11 +26,16 @@ class Note(BaseModel):
 
 
 class TabData(BaseModel):
-    string : int
-    fret : int
+    string : Literal[ 1, 2, 3, 4, 5, 6 ]
+    fret: int = Field(ge=1, le=24)
     time : float
 
-    # TODO add validtor for fret and string and time
+    @field_validator("time")
+    def validate_time(cls, value):
+        if value < 0:
+            raise ValueError(f"time must be postive: {value}")
+        return value
+    
 
 class Job(BaseModel):
     id : str
