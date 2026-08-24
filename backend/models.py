@@ -27,7 +27,7 @@ class Note(BaseModel):
 
 class TabData(BaseModel):
     string : Literal[ 1, 2, 3, 4, 5, 6 ]
-    fret: int = Field(ge=1, le=24)
+    fret: int = Field(ge=0, le=24)
     time : float
 
     @field_validator("time")

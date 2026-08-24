@@ -1,5 +1,7 @@
 import subprocess
 from pathlib import Path
+import numpy as np
+from models import Note
 
 class AudioExtractionError(Exception):
     def __init__(self, message="ffmpeg error"):
@@ -26,6 +28,12 @@ def extract_audio(video_path: Path, output_path: Path) -> None:
         print("Audio extracted successfully")
     except subprocess.CalledProcessError as e:
         raise AudioExtractionError(e) from e
+
+def load_audio(path: Path, sample_rate: int = 22050) -> tuple[np.ndarray, int]:
+    pass
+
+def detect_notes(audio: np.ndarray, sample_rate: int) -> list[Note]:
+    pass
     
 
 if __name__ == "__main__":
