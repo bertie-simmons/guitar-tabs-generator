@@ -39,5 +39,5 @@ class TabData(BaseModel):
 
 class Job(BaseModel):
     id : str
-    fret : Literal["pending","processing","done","failed"]
+    status : Literal["pending","processing","done","failed"]
     result : TabData | None
