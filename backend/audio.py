@@ -1,7 +1,11 @@
 import subprocess
+import tempfile
+import librosa
+import soundfile as sf
 from pathlib import Path
 import numpy as np
 from models import Note
+from basic_pitch.inference import predict
 
 class AudioExtractionError(Exception):
     def __init__(self, message="ffmpeg error"):
@@ -30,11 +34,24 @@ def extract_audio(video_path: Path, output_path: Path) -> None:
         raise AudioExtractionError(e) from e
 
 def load_audio(path: Path, sample_rate: int = 22050) -> tuple[np.ndarray, int]:
-    pass
+    audio_array, sample_rate = librosa.load(path)
+    return audio_array, sample_rate
 
 def detect_notes(audio: np.ndarray, sample_rate: int) -> list[Note]:
-    pass
-    
+    with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_wav:
+        sf.write(tmp_wav.name, audio, sample_rate)
+        _, _, note_events = predict(tmp_wav.name)
+
+    notes = []
+    for start_time, end_time, pitch_midi, amplitude, pitch_bend in note_events:
+        notes.append(
+            Note(
+                pitch=float(pitch_midi),
+                start_time=float(start_time),
+                duration=float(end_time - start_time),
+            )
+        )
+    return notes
 
 if __name__ == "__main__":
     video_path = Path("./tests/fixtures/video.mp4")
