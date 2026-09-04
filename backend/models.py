@@ -40,4 +40,4 @@ class TabData(BaseModel):
 class Job(BaseModel):
     id : str
     status : Literal["pending","processing","done","failed"]
-    result : TabData | None
+    result : list[TabData] | None
