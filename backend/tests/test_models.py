@@ -1,104 +1,75 @@
 import pytest
-from backend.models import Note, TabData, Job
-from typing import Literal
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 
-# === Construction Validators ==============================================
+from models import Job, Note, Tab, TabPosition
+
+# === valid construction ==================================================
+
 
 def test_note_valid_construction():
-
-    note = Note(
-        pitch = 85.2,
-        start_time = 0,
-        duration = 1.8
-    )
-
-    assert note.pitch ==  85.2
+    note = Note(pitch_midi=85.2, start_time=0, duration=1.8)
+    assert note.pitch_midi == 85.2
     assert note.start_time == 0
     assert note.duration == 1.8
 
-def test_tabdata_valid_construction():
 
-    tab = TabData(
-        string = 2,
-        fret = 5,
-        time = 1.5
-    )
+def test_tabposition_valid_construction():
+    pos = TabPosition(string=2, fret=5, time=1.5)
+    assert (pos.string, pos.fret, pos.time) == (2, 5, 1.5)
 
-    assert tab.string == 2
-    assert tab.fret == 5
-    assert tab.time == 1.5
 
 def test_job_valid_construction():
-
-    job = Job(
-        id = "abc123",
-        fret = "pending",
-        result = None
-    )
-
+    job = Job(id="abc123", status="pending")
     assert job.id == "abc123"
-    assert job.fret == "pending"
+    assert job.status == "pending"
     assert job.result is None
+    assert job.error is None
 
-# valid_data = {
-#         "id" : "job1",
-#         "status" : "pending",
-#         "result" : TabData(
-#             string = 2,
-#             fret = 5,
-#             time = 25.4
-#         )
-#     }
 
-# === Invalid Note =============================================
+def test_job_with_result():
+    tab = Tab(positions=[TabPosition(string=6, fret=0, time=0.0)])
+    job = Job(id="j1", status="done", result=tab)
+    assert job.result.positions[0].fret == 0
 
-def test_note_invalid_pitch():
 
+# === invalid Note =======================================================
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"pitch_midi": -1, "start_time": 0, "duration": 1.8},
+        {"pitch_midi": 200, "start_time": 0, "duration": 1.8},
+        {"pitch_midi": 60, "start_time": -1, "duration": 1.8},
+        {"pitch_midi": 60, "start_time": 0, "duration": -1},
+    ],
+)
+def test_note_invalid(kwargs):
     with pytest.raises(ValidationError):
-        Note(
-            pitch = -1,
-            start_time = 0,
-            duration = 1.8
-        )
+        Note(**kwargs)
 
-def test_note_invalid_start_time():
 
+# === invalid TabPosition ================================================
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"string": 0, "fret": 5, "time": 1.5},
+        {"string": 7, "fret": 5, "time": 1.5},
+        {"string": 3, "fret": -1, "time": 1.5},
+        {"string": 3, "fret": 25, "time": 1.5},
+        {"string": 3, "fret": 5, "time": -0.1},
+    ],
+)
+def test_tabposition_invalid(kwargs):
     with pytest.raises(ValidationError):
-        Note(
-            pitch = 25.6,
-            start_time = -1,
-            duration = 1.8
-        )
+        TabPosition(**kwargs)
 
-def test_note_invalid_duration():
 
+# === invalid Job ========================================================
+
+
+def test_job_invalid_status():
     with pytest.raises(ValidationError):
-        Note(
-            pitch = 25.6,
-            start_time = 0,
-            duration = -1
-        )
-
-# === Invalid TabData =============================================
-
-
-def test_tabdata_invalid_string():
-
-    with pytest.raises(ValidationError):
-        TabData(
-            string = 7,
-            fret = 5,
-            time = 1.5
-        ) 
-
-def test_tabdata_invalid_fret():
-
-    with pytest.raises(ValidationError):
-        TabData(
-            string = 7,
-            fret = 25,
-            time = 1.5
-        ) 
-
-# === Invalid Job =============================================
+        Job(id="j1", status="in-progress")
