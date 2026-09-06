@@ -44,3 +44,10 @@ next-env.d.ts
 # python
 __pycache__/
 .venv/
+.pytest_cache/
+*.egg-info/
+
+# backend runtime artifacts
+backend/uploads/
+backend/audio_cache/
+backend/tests/fixtures/*.wav

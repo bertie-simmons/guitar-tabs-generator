@@ -1,43 +1,47 @@
-from pydantic import BaseModel, Field, field_validator
+"""Pydantic models shared across the pipeline and the API.
+
+Two kinds of object live here:
+
+* domain objects that flow between pipeline stages (`Note`, `TabPosition`, `Tab`)
+* an API/state object (`Job`) that tracks one upload through processing
+"""
+
 from typing import Literal
 
+from pydantic import BaseModel, Field
+
+JobStatus = Literal["pending", "processing", "done", "failed"]
+
+
 class Note(BaseModel):
-    pitch : float
-    start_time : float
-    duration : float
+    """A single detected note.
 
-    @field_validator("pitch")
-    def validate_pitch(cls, value):
-        if value < 0:
-            raise ValueError(f"pitch must be positive: {value}")
-        return value
+    `pitch_midi` is a MIDI note number
+    """
 
-    @field_validator("start_time")
-    def validate_start_time(cls, value):
-        if value < 0:
-            raise ValueError(f"start-time must be postive: {value}")
-        return value
-
-    @field_validator("duration")
-    def validate_duration(cls, value):
-        if value < 0:
-            raise ValueError(f"duration must be postive: {value}")
-        return value
+    pitch_midi: float = Field(ge=0, le=127)
+    start_time: float = Field(ge=0, description="seconds from the start of the clip")
+    duration: float = Field(ge=0, description="seconds")
 
 
-class TabData(BaseModel):
-    string : Literal[ 1, 2, 3, 4, 5, 6 ]
-    fret: int = Field(ge=0, le=24)
-    time : float
+class TabPosition(BaseModel):
+    """Where a single note is played on the fretboard."""
 
-    @field_validator("time")
-    def validate_time(cls, value):
-        if value < 0:
-            raise ValueError(f"time must be postive: {value}")
-        return value
-    
+    string: int = Field(ge=1, le=6, description="1 = high E, 6 = low E")
+    fret: int = Field(ge=0, le=24, description="0 = open string")
+    time: float = Field(ge=0, description="seconds from the start of the clip")
+
+
+class Tab(BaseModel):
+    """A finished tab - an ordered list of fretboard positions."""
+
+    positions: list[TabPosition] = Field(default_factory=list)
+
 
 class Job(BaseModel):
-    id : str
-    status : Literal["pending","processing","done","failed"]
-    result : TabData | None
+    """Tracks one uploaded video through the pipeline."""
+
+    id: str
+    status: JobStatus = "pending"
+    result: Tab | None = None
+    error: str | None = None

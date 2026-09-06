@@ -1,3 +1,16 @@
-fastapi
-pydantic
-basic-pitch
+# Web 
+fastapi==0.137.0
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20        # for file uploads, required by fastapi 
+pydantic==2.13.4
+
+# Audio
+basic-pitch==0.4.0
+tensorflow==2.15.0              # inference backend for basic pitch
+librosa==0.11.0
+soundfile==0.14.0
+numpy<2                         # tensorflow and basic pitch are not numpy 2 ready
+
+# Tests
+pytest==9.1.1
+httpx==0.28.1 
