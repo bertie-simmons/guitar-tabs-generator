@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-07T00:00:00Z",
+  "title": "Design System: GTAB",
+  "extensions": {
+    "colorMeta": {
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "#fbfbf8", "tonalRamp": ["#2a2a26", "#45443f", "#615f58", "#807d74", "#9d9a90", "#c4c2b6", "#edece4", "#fbfbf8"] },
+      "paper-2": { "role": "neutral", "displayName": "Paper 2", "canonical": "#f4f3ee", "tonalRamp": ["#2a2a26", "#45443f", "#615f58", "#807d74", "#9d9a90", "#c4c2b6", "#e5e3da", "#f4f3ee"] },
+      "paper-3": { "role": "neutral", "displayName": "Paper 3", "canonical": "#edece4", "tonalRamp": ["#2a2a26", "#45443f", "#615f58", "#807d74", "#9d9a90", "#c4c2b6", "#dddbd0", "#edece4"] },
+      "ink": { "role": "neutral", "displayName": "Graphite Ink", "canonical": "#20211c", "tonalRamp": ["#20211c", "#33342e", "#4a4b43", "#575852", "#706f68", "#9a9a90", "#c4c2b6", "#e4e3d9"] },
+      "ink-2": { "role": "neutral", "displayName": "Ink 2", "canonical": "#575852" },
+      "ink-3": { "role": "neutral", "displayName": "Ink 3", "canonical": "#706f68" },
+      "ink-ghost": { "role": "neutral", "displayName": "Ink Ghost", "canonical": "#9a9a90" },
+      "rule": { "role": "neutral", "displayName": "Hairline", "canonical": "#dad8ce" },
+      "rule-2": { "role": "neutral", "displayName": "Hairline Strong", "canonical": "#c4c2b6" },
+      "route": { "role": "primary", "displayName": "Grease-Pencil Red", "canonical": "#cc4033", "tonalRamp": ["#3a1310", "#5c1d17", "#7f281f", "#a13227", "#b5372c", "#cc4033", "#d8564a", "#eca49c"] },
+      "route-bright": { "role": "primary", "displayName": "Red Bright", "canonical": "#d8564a" },
+      "route-press": { "role": "primary", "displayName": "Red Press", "canonical": "#b5372c" },
+      "route-ink": { "role": "primary", "displayName": "Red Ink", "canonical": "#ffffff" },
+      "route-wash": { "role": "primary", "displayName": "Red Wash", "canonical": "rgba(204, 64, 51, 0.1)" },
+      "route-line": { "role": "primary", "displayName": "Red Line", "canonical": "rgba(204, 64, 51, 0.42)" },
+      "route-faint": { "role": "primary", "displayName": "Red Faint", "canonical": "rgba(204, 64, 51, 0.32)" }
+    },
+    "typographyMeta": {
+      "lead": { "displayName": "Lead", "purpose": "The idle-state tracked-caps invitation; the largest type in the system." },
+      "body": { "displayName": "Body", "purpose": "Overpass sentence-case prose, panel hints, blurbs." },
+      "message": { "displayName": "Message", "purpose": "Failure message line and empty-result note (15px Ink)." },
+      "label": { "displayName": "Label", "purpose": "Tracked-caps Overpass for readout keys, section heads, header file prefix, failure tag." },
+      "stamp": { "displayName": "Stamp", "purpose": "The 'GTAB' mark in a 1.5px Ink border at the top of the control column. Not a logo." },
+      "mono-staff": { "displayName": "Staff", "purpose": "The six-line ASCII tab block. Overpass Mono 16px / 1.9, white-space: pre, PLAYABLE = 72 chars." },
+      "mono-readout": { "displayName": "Readout / Clock", "purpose": "Overpass Mono with tabular-nums for file/length/count/tuning, transport time, elapsed, per-system times." },
+      "mono-value": { "displayName": "Chord Value", "purpose": "The x 0 2 x x x voicing string in the bottom dock." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "state-transition", "value": "0.14s ease", "purpose": "Button background/transform and border/color transitions." },
+      { "name": "playhead-follow", "value": "left 0.09s linear", "purpose": "Playhead line tracking video time across the active system." },
+      { "name": "now-window", "value": "0.16s (JS time window, not a transition)", "purpose": "A fret digit inverts to white-on-red while within this many seconds of the playhead." },
+      { "name": "scan", "value": "2.4s cubic-bezier(0.65,0,0.35,1) infinite", "purpose": "Processing scan line and its route-wash gradient trail. Alpha-masked, motion only." },
+      { "name": "drop-pulse", "value": "1.4s ease-in-out infinite", "purpose": "Armed drop-target dashed frame opacity 0.5 to 1." },
+      { "name": "tick-pulse", "value": "2.8s ease-in-out infinite (staggered)", "purpose": "Scattered 'notes being found' marks during processing." },
+      { "name": "busy-blink", "value": "1s steps(2, jump-none) infinite", "purpose": "Trailing 7px red square on the busy primary button." },
+      { "name": "reduced-motion", "value": "animation/transition-duration 0.01ms !important", "purpose": "All motion collapses under prefers-reduced-motion: reduce; the sweep and scan go static." }
+    ],
+    "breakpoints": [
+      { "name": "stack", "value": "880px" },
+      { "name": "header-trim", "value": "640px" },
+      { "name": "dock-collapse", "value": "520px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single red action per screen (Transcribe / Copy tab). Full-width in the actions stack.",
+      "html": "<button class=\"ds-btn-primary\">COPY TAB</button>",
+      "css": ".ds-btn-primary { display: grid; place-items: center; width: 100%; height: 44px; background: var(--route, #cc4033); color: var(--route-ink, #fff); font-family: 'Overpass', ui-sans-serif, system-ui, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; border: none; border-radius: 0; cursor: pointer; transition: background 0.14s ease, transform 0.14s ease; } .ds-btn-primary:hover { background: var(--route-bright, #d8564a); } .ds-btn-primary:active { background: var(--route-press, #b5372c); transform: translateY(1px); } .ds-btn-primary:disabled { background: var(--paper-3, #edece4); color: var(--ink-ghost, #9a9a90); cursor: not-allowed; } .ds-btn-primary:focus-visible { outline: 2px solid var(--route, #cc4033); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action — hairline-bordered, no fill. New file, Start over, Choose a file.",
+      "html": "<button class=\"ds-btn-ghost\">NEW FILE</button>",
+      "css": ".ds-btn-ghost { width: 100%; height: 38px; background: var(--paper, #fbfbf8); border: 1px solid var(--rule-2, #c4c2b6); color: var(--ink-2, #575852); font-family: 'Overpass', ui-sans-serif, system-ui, sans-serif; font-size: 10.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; border-radius: 0; cursor: pointer; transition: border-color 0.14s ease, color 0.14s ease; } .ds-btn-ghost:hover { border-color: var(--ink-3, #706f68); color: var(--ink, #20211c); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--route, #cc4033); outline-offset: 2px; }"
+    },
+    {
+      "name": "Transport Button",
+      "kind": "button",
+      "refersTo": "transport-button",
+      "description": "34px square play/pause control beside the scrubber; inline SVG glyph.",
+      "html": "<button class=\"ds-transport\" aria-label=\"Play\"><svg width=\"11\" height=\"13\" viewBox=\"0 0 11 13\" aria-hidden=\"true\"><path d=\"M0 0v13l11-6.5z\" fill=\"currentColor\"/></svg></button>",
+      "css": ".ds-transport { width: 34px; height: 34px; display: grid; place-items: center; background: var(--paper, #fbfbf8); border: 1px solid var(--rule-2, #c4c2b6); color: var(--ink, #20211c); border-radius: 0; cursor: pointer; transition: border-color 0.14s ease; } .ds-transport:hover { border-color: var(--ink-2, #575852); }"
+    },
+    {
+      "name": "Readout Row",
+      "kind": "custom",
+      "refersTo": "readout-row",
+      "description": "Key/value row in the panel spec list. Hairline-divided, mono value with tabular-nums, em-dash when empty.",
+      "html": "<dl class=\"ds-readouts\"><div class=\"ds-readout\"><dt>Specimen</dt><dd>am-riff-take-2.mp4</dd></div><div class=\"ds-readout\"><dt>Notes</dt><dd>33</dd></div><div class=\"ds-readout\"><dt>Length</dt><dd>&mdash;</dd></div></dl>",
+      "css": ".ds-readouts { display: flex; flex-direction: column; border-top: 1px solid var(--rule, #dad8ce); margin: 0; } .ds-readout { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--rule, #dad8ce); } .ds-readout dt { font-family: 'Overpass', ui-sans-serif, system-ui, sans-serif; font-size: 9.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3, #706f68); } .ds-readout dd { margin: 0; font-family: 'Overpass Mono', ui-monospace, monospace; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-2, #575852); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 20ch; }"
+    },
+    {
+      "name": "Stamp",
+      "kind": "custom",
+      "refersTo": "stamp",
+      "description": "The 'GTAB' rubber-stamp mark at the top of the control column. Bordered box, not a logo.",
+      "html": "<div class=\"ds-stamp\"><span class=\"ds-stamp-mark\">GTAB</span><span class=\"ds-stamp-sub\">ASCII tab · read from video</span></div>",
+      "css": ".ds-stamp { display: flex; flex-direction: column; gap: 6px; padding-bottom: 14px; border-bottom: 1px solid var(--rule, #dad8ce); } .ds-stamp-mark { align-self: flex-start; font-family: 'Overpass Mono', ui-monospace, monospace; font-weight: 600; font-size: 13px; letter-spacing: 0.12em; color: var(--ink, #20211c); border: 1.5px solid var(--ink, #20211c); padding: 2px 7px 1px; } .ds-stamp-sub { font-family: 'Overpass', ui-sans-serif, system-ui, sans-serif; font-size: 11px; color: var(--ink-3, #706f68); }"
+    },
+    {
+      "name": "Scrubber",
+      "kind": "custom",
+      "refersTo": "scrubber",
+      "description": "3px flat seek track with red fill; keyboard-seekable slider.",
+      "html": "<div class=\"ds-scrub\" role=\"slider\" tabindex=\"0\" aria-label=\"Seek\" aria-valuemin=\"0\" aria-valuemax=\"14\" aria-valuenow=\"5\"><div class=\"ds-scrub-fill\" style=\"width:36%\"></div></div>",
+      "css": ".ds-scrub { flex: 1; height: 3px; background: var(--paper-3, #edece4); position: relative; cursor: pointer; } .ds-scrub-fill { position: absolute; inset: 0 auto 0 0; background: var(--route, #cc4033); } .ds-scrub:focus-visible { outline: 2px solid var(--route, #cc4033); outline-offset: 2px; }"
+    },
+    {
+      "name": "Tab System",
+      "kind": "custom",
+      "refersTo": "tab-block",
+      "description": "One wrapped 72-char system of the interactive ASCII tablature: recessed structure, promoted fret digits, white-on-red now-notes, seekable region, hairline separator, red playhead.",
+      "html": "<div class=\"ds-system\" role=\"button\" tabindex=\"0\" aria-label=\"Tab line 1, 0:00 to 0:07. Click to seek the video.\"><span class=\"ds-system-time\">0:00</span><span class=\"ds-playhead\" style=\"left:14ch\" aria-hidden=\"true\"></span><span class=\"ds-system-line\"><span class=\"ds-lbl\">e|</span>------<span class=\"ds-fig\">0</span>----<span class=\"ds-now\">3</span>--------|</span><span class=\"ds-system-line\"><span class=\"ds-lbl\">B|</span>---<span class=\"ds-fig\">1</span>--------<span class=\"ds-fig\">1</span>------|</span></span>",
+      "css": ".ds-system { position: relative; font-family: 'Overpass Mono', ui-monospace, monospace; font-size: 16px; line-height: 1.9; letter-spacing: 0; white-space: pre; color: var(--ink-3, #706f68); padding: 30px 0 22px; cursor: pointer; border-top: 1px solid var(--rule, #dad8ce); } .ds-system-line { display: block; position: relative; z-index: 1; } .ds-lbl { color: var(--ink-2, #575852); } .ds-fig { color: var(--ink, #20211c); font-weight: 600; } .ds-now { background: var(--route, #cc4033); color: #fff; font-weight: 600; border-radius: 1px; } .ds-system-time { position: absolute; right: 1ch; top: 8px; z-index: 2; font-size: 11px; letter-spacing: 0.03em; color: var(--ink-3, #706f68); } .ds-system-time::before { content: '\\00b7'; margin-right: 4px; color: rgba(204,64,51,0.32); } .ds-playhead { position: absolute; top: 30px; height: calc(6 * 1.9em); width: 2px; background: var(--route, #cc4033); pointer-events: none; transition: left 0.09s linear; z-index: 3; } .ds-playhead::before { content: ''; position: absolute; left: -4px; top: -5px; border: 5px solid transparent; border-top-color: var(--route, #cc4033); } .ds-system:focus-visible { outline: 2px solid var(--route, #cc4033); outline-offset: 2px; }"
+    },
+    {
+      "name": "Chord Diagram",
+      "kind": "custom",
+      "refersTo": "chord-diagram",
+      "description": "To-scale vertical chord box in the bottom dock: red fretted dots with white numbers, Ink rings for open strings, Ink-3 x for muted, base-fret label when up the neck. Full grid only when 2+ notes struck together.",
+      "html": "<div class=\"ds-chord\"><svg width=\"108\" height=\"132\" viewBox=\"0 0 108 132\" role=\"img\" aria-label=\"Chord shape x 0 2 x x x, 2 notes struck together\"><line x1=\"14\" y1=\"24\" x2=\"94\" y2=\"24\" stroke=\"#20211c\" stroke-width=\"3\"/><line x1=\"14\" y1=\"48\" x2=\"94\" y2=\"48\" stroke=\"#c4c2b6\"/><line x1=\"14\" y1=\"72\" x2=\"94\" y2=\"72\" stroke=\"#c4c2b6\"/><line x1=\"14\" y1=\"96\" x2=\"94\" y2=\"96\" stroke=\"#c4c2b6\"/><line x1=\"14\" y1=\"120\" x2=\"94\" y2=\"120\" stroke=\"#c4c2b6\"/><line x1=\"14\" y1=\"24\" x2=\"14\" y2=\"120\" stroke=\"#706f68\" stroke-width=\"1.5\"/><line x1=\"30\" y1=\"24\" x2=\"30\" y2=\"120\" stroke=\"#706f68\" stroke-width=\"1.3\"/><line x1=\"46\" y1=\"24\" x2=\"46\" y2=\"120\" stroke=\"#706f68\" stroke-width=\"1.1\"/><line x1=\"62\" y1=\"24\" x2=\"62\" y2=\"120\" stroke=\"#706f68\" stroke-width=\"0.9\"/><line x1=\"78\" y1=\"24\" x2=\"78\" y2=\"120\" stroke=\"#706f68\" stroke-width=\"0.7\"/><line x1=\"94\" y1=\"24\" x2=\"94\" y2=\"120\" stroke=\"#706f68\" stroke-width=\"0.6\"/><text x=\"14\" y=\"17\" text-anchor=\"middle\" font-size=\"9\" font-family=\"'Overpass Mono', monospace\" fill=\"#706f68\">×</text><circle cx=\"30\" cy=\"14\" r=\"3.4\" fill=\"none\" stroke=\"#575852\" stroke-width=\"1.3\"/><circle cx=\"46\" cy=\"36\" r=\"6.5\" fill=\"#cc4033\"/><text x=\"46\" y=\"39\" text-anchor=\"middle\" font-size=\"8\" font-weight=\"600\" font-family=\"'Overpass Mono', monospace\" fill=\"#fff\">2</text></svg><div class=\"ds-chord-meta\"><span class=\"ds-chord-k\">Chord shape · 0:00</span><span class=\"ds-chord-v\">x 0 2 x x x</span><span class=\"ds-chord-n\">2 notes struck together</span></div></div>",
+      "css": ".ds-chord { display: flex; gap: 22px; align-items: center; padding: 16px 28px; } .ds-chord-meta { display: flex; flex-direction: column; gap: 6px; } .ds-chord-k { font-family: 'Overpass', ui-sans-serif, system-ui, sans-serif; font-size: 9.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3, #706f68); } .ds-chord-v { font-family: 'Overpass Mono', ui-monospace, monospace; font-size: 19px; font-weight: 600; letter-spacing: 0.1em; font-variant-numeric: tabular-nums; color: var(--ink, #20211c); } .ds-chord-n { font-family: 'Overpass', ui-sans-serif, system-ui, sans-serif; font-size: 11px; color: var(--ink-3, #706f68); }"
+    },
+    {
+      "name": "Failure Tag",
+      "kind": "custom",
+      "refersTo": "failure-tag",
+      "description": "Red-outlined 'Transcription stopped' tag above the backend error string and a recovery hint.",
+      "html": "<div class=\"ds-failure\" role=\"alert\"><p class=\"ds-failure-tag\">Transcription stopped</p><p class=\"ds-failure-msg\">ffmpeg produced an empty file — no audio track in the clip.</p><p class=\"ds-failure-hint\">Upload a clip that actually contains sound.</p></div>",
+      "css": ".ds-failure { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; max-width: 62ch; } .ds-failure-tag { font-family: 'Overpass', ui-sans-serif, system-ui, sans-serif; font-size: 10.5px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--route, #cc4033); border: 1px solid rgba(204,64,51,0.42); padding: 4px 9px; margin: 0; } .ds-failure-msg { font-size: 15px; line-height: 1.6; color: var(--ink, #20211c); margin: 0; font-family: 'Overpass', ui-sans-serif, system-ui, sans-serif; } .ds-failure-hint { font-size: 13px; line-height: 1.6; color: var(--ink-2, #575852); margin: 0; font-family: 'Overpass', ui-sans-serif, system-ui, sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Grease-Pencil Tab Sheet",
+    "overview": "GTAB is a plain-text tablature sheet, not an upload form and not a DAW. The whole surface is a warm paper-white sheet ruled with single hairlines: a full-bleed stage that carries the six-line ASCII staff anchored top-left and growing downward, a right control column where a transport would sit, and a bottom dock holding a to-scale chord-shape diagram. There is no centered drop-card and no friendly stepper - the empty stage is itself the drop target, and the readable payoff is a monospace tab block you can copy verbatim. The system is flat, quiet, and near-monochrome. Depth is three warm tonal steps of paper plus two weights of 1px hairline - no cards, no shadows, no gradients, no glow. One color has hue: a grease-pencil red (#cc4033) that behaves like a mark made on the sheet by hand. It carries the present moment (the playhead, the fret digits sounding now inverted white-on-red, the fretted dots on the chord diagram, the scrub fill), the single primary action, and the machine's own status marks (focus ring, text selection, the processing scan line, the drop-target frame, the failure tag). Everything else is graphite ink on paper. Two typefaces divide all the labor: Overpass for tracked-uppercase labels and running prose, Overpass Mono for the tab staff and every number. Graphite ink is never pure black. Corners are square everywhere; the only curve in the build is a 1px focus outline. color-scheme is locked to light.",
+    "keyCharacteristics": [
+      "Full-bleed sheet: stage + right control column + bottom chord dock, no page margins.",
+      "Warm paper ground (#fbfbf8) with 1px hairlines instead of shadows or cards.",
+      "One hue only - grease-pencil red - for 'now', the one action, and machine status.",
+      "Square corners (0 radius); the only curve is the 1px focus outline.",
+      "Two-font split: tracked-caps / prose Overpass, everything numeric in Overpass Mono.",
+      "Graphite ink (#20211c), never #000."
+    ],
+    "rules": [
+      { "name": "The Red Is A Mark Rule", "body": "Red is a grease-pencil mark on the sheet, not a brand color. It only ever means one of three things: this is happening now (playhead, now-notes, fretted dots, scrub fill), this is the one action (primary button), or this is the machine talking (focus ring, selection, processing scan, drop frame, failure tag). An element that wants red for emphasis, hierarchy, or decoration gets an ink grey instead.", "section": "colors" },
+      { "name": "The Graphite Rule", "body": "Text ink is #20211c and never pure black. Every darker-looking mark is either red or one of the four ink greys.", "section": "colors" },
+      { "name": "The Recessed-Staff / Promoted-Digit Rule", "body": "In the tab block the structure - dashes, bars, string letters - sits at Ink 3; only the fret numbers lift to Ink, and only the now-notes go to white-on-red. Legibility of the payload is tonal, not chromatic.", "section": "colors" },
+      { "name": "The Two Voices Rule", "body": "Overpass carries every label (tracked, uppercase) and every sentence (sentence case) - nothing else. Overpass Mono carries the staff and anything numeric. A number never appears in the sans face; a running sentence never appears in the mono face. No third family, no italics.", "section": "typography" },
+      { "name": "The Tracked-Caps-Or-Sentence Rule", "body": "Overpass appears only at 0.14 to 0.2em tracking in uppercase, or at normal tracking in sentence case. There is no in-between - no title-case headings, no tracked lowercase.", "section": "typography" },
+      { "name": "The Hairline Rule", "body": "Every division in the UI is one 1px line - rule (#dad8ce) inside content, rule-2 (#c4c2b6) at the structural edges. Never a card, never a shadow, never a fill change alone to imply an edge.", "section": "elevation" },
+      { "name": "The Motion-Is-A-Mark Rule", "body": "The processing scan is a 2px red line with a route-wash to transparent gradient trail; that gradient is an alpha mask shaping a moving mark, not a fill. It must not widen, brighten, slow to rest, or leave red in the static chrome. Same for the route-wash behind text selection: a wash, not a highlight block.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep red (#cc4033) to the three meanings - 'now', the one action, and machine status - and give every other element an ink grey.",
+      "Do divide surfaces with a single 1px line (#dad8ce in content, #c4c2b6 at edges) and build depth from the three paper steps (#fbfbf8 to #edece4).",
+      "Do ship square corners (0 radius); the only curve is the 1px focus outline.",
+      "Do route labels through tracked-caps Overpass, sentences through sentence-case Overpass, and every number through Overpass Mono with tabular-nums.",
+      "Do keep the staff structure at Ink 3 and lift only fret digits to Ink; reserve white-on-red for the notes under the playhead.",
+      "Do render empty readout values as an em dash, never blank.",
+      "Do make waiting diegetic - a scan line and a scatter that read as the machine working - never a fake percentage or progress bar.",
+      "Do provide a non-color channel for every state: text tags, x / open-circle glyphs, aria-live line announcements, role=slider / role=button on seek regions.",
+      "Do keep color-scheme: light; graphite ink is #20211c, never #000."
+    ],
+    "donts": [
+      "Don't add box-shadow, blur, or glow to any surface. There are none.",
+      "Don't use gradients as fills. The only gradient is the transparent-stop alpha mask on the moving scan trail; the dev video hatch is a pattern, not a fill.",
+      "Don't introduce a second hue or spend red on headings, structure, hover emphasis, or decoration.",
+      "Don't wrap content in rounded cards or panels; use the hairline.",
+      "Don't center a drop-card or add a stepper - the empty stage is the drop target and the staff is the hero.",
+      "Don't mix the two faces across roles (no mono sentences, no sans numerics) or add a third family or italics.",
+      "Don't set Overpass in title case or tracked lowercase - tracked-caps or sentence case only.",
+      "Don't let the processing scan or the selection wash widen, brighten, or persist at rest."
+    ]
+  }
+}

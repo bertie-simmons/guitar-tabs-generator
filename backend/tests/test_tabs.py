@@ -60,3 +60,11 @@ def test_tab_preserves_order_and_times():
     tab = notes_to_tab(notes)
     assert [p.time for p in tab.positions] == [0.0, 1.0, 2.0]
     assert tab.positions[0] == tab.positions[0].__class__(string=6, fret=0, time=0.0)
+
+
+def test_unreachable_notes_are_skipped_not_fatal():
+    # A single out-of-range detection (e.g. an octave artifact) should be
+    # dropped, leaving the reachable notes tabbed.
+    notes = [note(40, 0.0), note(20, 1.0), note(45, 2.0)]
+    tab = notes_to_tab(notes)
+    assert [p.time for p in tab.positions] == [0.0, 2.0]

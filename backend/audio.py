@@ -93,7 +93,15 @@ def detect_notes(audio_path: Path) -> list[Note]:
     # imported lazily - slow import
     from basic_pitch.inference import predict
 
-    _, _, note_events = predict(str(audio_path), _get_model())
+    _, _, note_events = predict(
+        str(audio_path), 
+        _get_model(),
+        onset_threshold=0.6,       # default 0.5 — ghosts have weaker onsets
+        frame_threshold=0.4,       # default 0.3
+        minimum_note_length=90.0,  # default ~128ms 
+        minimum_frequency=78.0,    # E2 ≈ 82 Hz
+        maximum_frequency=1400.0,  # 24th-fret high E ≈ 1319 Hz
+    )
 
     notes: list[Note] = []
     for start_time, end_time, pitch_midi, _amplitude, _pitch_bend in note_events:

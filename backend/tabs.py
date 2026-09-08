@@ -5,8 +5,12 @@ one per note, preferring positions close to the previous note so the resulting
 tab does not jump around the neck.
 """
 
+import logging
+
 from constants import MAX_FRET, OPEN_STRING_PITCHES
 from models import Note, Tab, TabPosition
+
+logger = logging.getLogger(__name__)
 
 Position = tuple[int, int]  # string, fret
 
@@ -54,7 +58,11 @@ def notes_to_tab(notes: list[Note]) -> Tab:
     prev_position: Position | None = None
 
     for note in notes:
-        string, fret = pick_string_and_fret(note, prev_position)
+        try:
+            string, fret = pick_string_and_fret(note, prev_position)
+        except ValueError as exc:
+            logger.warning("skipping note at %.2fs: %s", note.start_time, exc)
+            continue
         positions.append(TabPosition(string=string, fret=fret, time=note.start_time))
         prev_position = (string, fret)
 
