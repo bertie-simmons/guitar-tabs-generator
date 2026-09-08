@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Fretboard Map — preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700&family=Overpass+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBFBF8;
+    --paper-2:#F4F3EE;
+    --paper-3:#EEEDE6;
+    --ink:#20211C;
+    --ink-2:#575852;
+    --ink-3:#8E8F87;
+    --rule:#DAD8CE;
+    --rule-2:#C4C2B6;
+    --route:#CC4033;
+    --route-ink:#FFFFFF;
+    --route-wash:rgba(204,64,51,0.10);
+    --route-faint:rgba(204,64,51,0.35);
+    --sans:"Overpass",system-ui,sans-serif;
+    --mono:"Overpass Mono",ui-monospace,monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:14px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .shell{
+    display:grid;
+    grid-template:
+      "stage side" 1fr
+      "dock  dock" 172px
+      / minmax(0,1fr) 336px;
+    width:100%;
+    height:100dvh;
+    overflow:hidden;
+  }
+
+  /* ---------- STAGE ---------- */
+  .stage{
+    grid-area:stage;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+    background:var(--paper);
+  }
+  .stageHead{
+    position:relative;z-index:2;
+    display:flex;align-items:center;gap:14px;
+    padding:16px 32px 14px 40px;
+    border-bottom:1px solid var(--rule);
+  }
+  .kick{
+    font-size:10.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-3);
+  }
+  .kick b{color:var(--ink-2);font-weight:600}
+  .headRule{flex:1;height:1px;background:var(--rule)}
+  .headDim{
+    font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-3);
+  }
+
+  .stageBody{
+    position:relative;z-index:1;
+    flex:1;min-height:0;
+    display:flex;flex-direction:column;
+    padding:26px 32px 24px 40px;
+    overflow:hidden;
+  }
+
+  /* ---- tab staff ---- */
+  .staffWrap{
+    flex:1;min-height:0;overflow:auto;
+    position:relative;
+    display:flex;flex-direction:column;justify-content:flex-start;
+  }
+  .system{position:relative;padding:22px 0}
+  .system:first-child{padding-top:2px}
+  .system:first-child .systemTime{top:4px}
+  .system + .system{border-top:1px solid var(--rule)}
+  .systemTime{
+    position:absolute;right:2px;top:22px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.03em;color:var(--ink-3);
+  }
+  .systemTime::before{content:"·";margin-right:3px;color:var(--route-faint)}
+  .staff{
+    font-family:var(--mono);
+    font-size:16px;
+    line-height:1.9;
+    white-space:pre;
+    color:var(--ink-3);
+    position:relative;
+  }
+  .staff .lbl{color:var(--ink-2)}
+  .staff .fig{color:var(--ink);font-weight:600}
+  .staff .now{
+    background:var(--route);
+    color:var(--route-ink);
+    font-weight:600;
+    border-radius:1px;
+  }
+  .playhead{
+    position:absolute;top:6px;bottom:6px;width:2px;
+    background:var(--route);
+  }
+  .playhead::before{
+    content:"";position:absolute;left:-4px;top:-4px;
+    border:5px solid transparent;border-top-color:var(--route);
+  }
+
+  /* ---------- SIDE ---------- */
+  .side{
+    grid-area:side;
+    background:var(--paper-2);
+    border-left:1px solid var(--rule-2);
+    display:flex;flex-direction:column;
+    padding:18px 20px 18px;
+    gap:16px;
+    overflow:auto;
+  }
+  .stamp{
+    display:flex;flex-direction:column;gap:5px;
+    padding-bottom:14px;border-bottom:1px solid var(--rule);
+  }
+  .stampRow{display:flex;align-items:center;gap:9px}
+  .stampMark{
+    font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.12em;
+    color:var(--ink);
+    border:1.5px solid var(--ink);
+    padding:2px 7px 1px;
+  }
+  .stampSub{font-size:11px;letter-spacing:.02em;color:var(--ink-3)}
+
+  .video{
+    width:100%;aspect-ratio:16/10;
+    background:
+      repeating-linear-gradient(-45deg,#e7e6df 0 10px,#efeee7 10px 20px);
+    border:1px solid var(--rule-2);
+    display:grid;place-items:center;
+    font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);
+    position:relative;
+  }
+  .transport{display:flex;align-items:center;gap:10px}
+  .tBtn{
+    width:34px;height:34px;flex:none;
+    border:1px solid var(--rule-2);background:var(--paper);
+    display:grid;place-items:center;color:var(--ink);
+  }
+  .scrub{flex:1;height:3px;background:var(--paper-3);position:relative}
+  .scrub i{position:absolute;inset:0 40% 0 0;background:var(--route);display:block}
+  .tTime{font-family:var(--mono);font-size:11px;color:var(--ink-2)}
+
+  .fields{display:flex;flex-direction:column;border-top:1px solid var(--rule)}
+  .field{
+    display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+    padding:8px 0;border-bottom:1px solid var(--rule);
+  }
+  .field dt{font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+  .field dd{font-family:var(--mono);font-size:12px;color:var(--ink-2);text-align:right}
+
+  .legend{border-top:1px solid var(--rule);padding-top:12px}
+  .legendHead{font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);margin-bottom:9px}
+  .legendRow{display:flex;align-items:center;gap:10px;padding:3px 0;font-size:11.5px;color:var(--ink-2)}
+  .gl{width:20px;height:20px;flex:none;display:grid;place-items:center}
+  .glDot{width:11px;height:11px;border-radius:50%;background:var(--route)}
+  .glOpen{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--ink-2)}
+  .glMute{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+  .glChord{width:15px;height:11px;border:1.5px solid var(--route);}
+
+  .actions{margin-top:auto;display:flex;flex-direction:column;gap:9px;padding-top:14px;border-top:1px solid var(--rule)}
+  .primary{
+    height:44px;background:var(--route);color:var(--route-ink);
+    font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    border:none;
+  }
+  .ghost{
+    height:38px;background:transparent;color:var(--ink-2);
+    border:1px solid var(--rule-2);
+    font-weight:600;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  }
+
+  /* ---------- DOCK ---------- */
+  .dock{
+    grid-area:dock;
+    background:var(--paper-2);
+    border-top:1px solid var(--rule-2);
+    display:grid;
+    grid-template-columns:auto 1fr;
+    align-items:stretch;
+  }
+  .chordBox{
+    padding:16px 26px;
+    border-right:1px solid var(--rule);
+    display:flex;gap:20px;align-items:center;
+  }
+  .chordDiag{display:block}
+  .chordMeta{display:flex;flex-direction:column;gap:6px}
+  .chordMeta .k{font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3)}
+  .chordMeta .v{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--ink);letter-spacing:.08em}
+  .chordMeta .n{font-size:11px;color:var(--ink-3)}
+  .dockNote{
+    padding:16px 26px;
+    display:flex;flex-direction:column;justify-content:center;gap:6px;
+  }
+  .dockNote .k{font-size:9.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3)}
+  .dockNote p{font-size:12px;color:var(--ink-2);max-width:52ch;line-height:1.55}
+  .dockNote code{font-family:var(--mono);background:var(--paper-3);padding:1px 5px;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ============ STAGE ============ -->
+  <section class="stage">
+    <div class="stageHead">
+      <span class="kick">Tab&nbsp;&nbsp;<b>am-riff-take-2.mp4</b></span>
+      <span class="headRule"></span>
+      <span class="headDim">32 notes · 0:14 · E A D G B e</span>
+    </div>
+
+    <div class="stageBody">
+
+      <!-- TAB STAFF -->
+      <div class="staffWrap">
+        <div class="system">
+          <span class="systemTime">0:00</span>
+<pre class="staff"><span class="lbl">e|</span>--<span class="fig">0</span>-----------<span class="fig">0</span>---------<span class="fig">3</span>-------------<span class="fig">0</span>-------|
+<span class="lbl">B|</span>--------<span class="fig">1</span>---------<span class="fig">1</span>-------------<span class="fig">1</span>-------------|
+<span class="lbl">G|</span>-----<span class="fig">2</span>-----<span class="fig">2</span>----------------<span class="fig">2</span>-----------<span class="fig">2</span>-----|
+<span class="lbl">D|</span>------------------------------<span class="fig">2</span>-----------<span class="fig">2</span>---|
+<span class="lbl">A|</span>--<span class="fig">0</span>-------------------------------<span class="fig">0</span>-----<span class="fig">3</span>-----|
+<span class="lbl">E|</span>-----------------<span class="fig">3</span>----------------------------|</pre>
+        </div>
+        <div class="system">
+          <span class="systemTime">0:07</span>
+          <span class="playhead" style="left:calc(2ch + 40ch)"></span>
+<pre class="staff"><span class="lbl">e|</span>----------------------------------------<span class="now">0</span>-----|
+<span class="lbl">B|</span>-----<span class="fig">5</span>--------<span class="fig">5</span>-----------<span class="fig">5</span>-------------<span class="now">3</span>-----|
+<span class="lbl">G|</span>--------<span class="fig">5</span>-----------<span class="fig">7</span>-------<span class="fig">7</span>-----------<span class="now">2</span>-----|
+<span class="lbl">D|</span>--<span class="fig">5</span>-------<span class="fig">5</span>-----------------------<span class="fig">7</span>-----<span class="now">2</span>-----|
+<span class="lbl">A|</span>--------------------------------<span class="fig">7</span>-------<span class="now">0</span>-----|
+<span class="lbl">E|</span>--<span class="fig">3</span>---------------------<span class="fig">5</span>---------------<span class="now">x</span>-----|</pre>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ SIDE ============ -->
+  <aside class="side">
+    <div class="stamp">
+      <div class="stampRow">
+        <span class="stampMark">GTAB</span>
+      </div>
+      <span class="stampSub">ASCII tab · read from video</span>
+    </div>
+
+    <div class="video">preview
+      <span style="position:absolute;left:8px;bottom:6px;font-family:var(--mono);font-size:10px;letter-spacing:0;text-transform:none;color:var(--ink-2)">0:13 / 0:14</span>
+    </div>
+    <div class="transport">
+      <button class="tBtn" aria-label="Pause">
+        <svg width="10" height="12" viewBox="0 0 10 12"><path d="M0 0h3v12H0zM7 0h3v12H7z" fill="currentColor"/></svg>
+      </button>
+      <span class="scrub"><i></i></span>
+      <span class="tTime">0:13</span>
+    </div>
+
+    <dl class="fields">
+      <div class="field"><dt>Specimen</dt><dd>am-riff-take-2.mp4</dd></div>
+      <div class="field"><dt>Length</dt><dd>0:14</dd></div>
+      <div class="field"><dt>Notes</dt><dd>32</dd></div>
+      <div class="field"><dt>Tuning</dt><dd>E A D G B e</dd></div>
+    </dl>
+
+    <div class="legend">
+      <div class="legendHead">Legend</div>
+      <div class="legendRow"><span class="gl"><span class="glDot"></span></span> note sounding now</div>
+      <div class="legendRow"><span class="gl"><span class="glOpen"></span></span> open string</div>
+      <div class="legendRow"><span class="gl"><span class="glMute">✕</span></span> muted / not played</div>
+      <div class="legendRow"><span class="gl"><span class="glChord"></span></span> chord — notes struck together</div>
+    </div>
+
+    <div class="actions">
+      <button class="primary">Copy tab</button>
+      <button class="ghost">New file</button>
+    </div>
+  </aside>
+
+  <!-- ============ DOCK ============ -->
+  <footer class="dock">
+    <div class="chordBox">
+      <svg class="chordDiag" width="118" height="140" viewBox="0 0 118 140" font-family="Overpass Mono, monospace">
+        <!-- o / x row -->
+        <g font-size="12" text-anchor="middle" fill="#575852">
+          <text x="16" y="14">✕</text><text x="34" y="14">○</text>
+          <text x="52" y="14" fill="#8E8F87">·</text><text x="70" y="14" fill="#8E8F87">·</text>
+          <text x="88" y="14" fill="#8E8F87">·</text><text x="106" y="14">○</text>
+        </g>
+        <!-- nut -->
+        <rect x="16" y="22" width="90" height="4" fill="#20211C"/>
+        <!-- frets -->
+        <g stroke="#C4C2B6" stroke-width="1">
+          <line x1="16" y1="52" x2="106" y2="52"/><line x1="16" y1="82" x2="106" y2="82"/>
+          <line x1="16" y1="112" x2="106" y2="112"/>
+        </g>
+        <!-- strings -->
+        <g stroke="#8E8F87" stroke-width="1">
+          <line x1="16" y1="24" x2="16" y2="112"/><line x1="34" y1="24" x2="34" y2="112"/>
+          <line x1="52" y1="24" x2="52" y2="112"/><line x1="70" y1="24" x2="70" y2="112"/>
+          <line x1="88" y1="24" x2="88" y2="112"/><line x1="106" y1="24" x2="106" y2="112"/>
+        </g>
+        <!-- dots: A f2 (x=34,fret1 band centre y=37?) fret2 -> y=67 ; D f2 x=52 ; G f2 x=70 ; B f3 x=88 y=97 -->
+        <circle cx="34" cy="67" r="8" fill="#CC4033"/>
+        <circle cx="52" cy="67" r="8" fill="#CC4033"/>
+        <circle cx="70" cy="67" r="8" fill="#CC4033"/>
+        <circle cx="88" cy="97" r="8" fill="#CC4033"/>
+      </svg>
+      <div class="chordMeta">
+        <span class="k">Chord shape · 0:13</span>
+        <span class="v">x 0 2 2 3 0</span>
+        <span class="n">5 notes struck together</span>
+      </div>
+    </div>
+    <div class="dockNote">
+      <span class="k">How the shape is read</span>
+      <p>The fretboard shows exactly the notes detected at the current instant — a full grid when several land together, a single marked fret otherwise. Positions come from the video's audio and hand tracking; there is no chord‑name guessing. Copy&nbsp;tab yields the plain text verbatim: <code>e|--0--</code></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

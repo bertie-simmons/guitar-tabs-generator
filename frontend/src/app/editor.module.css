@@ -1,0 +1,870 @@
+/* The transcription editor — a light ASCII-tab sheet. */
+
+.shell {
+  display: grid;
+  grid-template:
+    "stage side" 1fr
+    "dock  dock" var(--dock-h)
+    / minmax(0, 1fr) clamp(300px, 24vw, 348px);
+  width: 100%;
+  height: 100dvh;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+/* ---------- stage ---------- */
+
+.stage {
+  grid-area: stage;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--paper);
+}
+
+.stageHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 30px 13px 40px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.headKick {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headKick b {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.headRule {
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.headDim {
+  font-family: var(--font-tab);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.stageBody {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---------- idle / drop target ---------- */
+
+.idle {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.idleStaff {
+  position: absolute;
+  left: 40px;
+  top: 30px;
+  margin: 0;
+  font-family: var(--font-tab);
+  font-size: 16px;
+  line-height: 1.9;
+  white-space: pre;
+  color: var(--rule);
+  pointer-events: none;
+  user-select: none;
+}
+
+.idleStaff .lbl {
+  color: var(--rule-2);
+}
+
+.idlePrompt {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 26px 34px;
+  background: var(--paper);
+}
+
+.idleBrowse {
+  width: auto;
+  padding: 0 22px;
+  display: grid;
+  place-items: center;
+}
+
+.idleHead {
+  font-size: clamp(12px, 2.4vw, 16px);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  max-width: 26ch;
+  line-height: 1.9;
+  text-wrap: balance;
+}
+
+.idleFormats {
+  font-family: var(--font-tab);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+.dropArmed .stageBody::after {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border: 1px dashed var(--route-line);
+  background: var(--route-wash);
+  pointer-events: none;
+  animation: dropPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes dropPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---------- processing ---------- */
+
+.processing {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 28px 32px 32px 40px;
+  gap: 28px;
+  overflow: hidden;
+}
+
+.ghostStaff {
+  font-family: var(--font-tab);
+  font-size: 16px;
+  line-height: 1.9;
+  white-space: pre;
+  color: var(--rule-2);
+  position: relative;
+}
+
+.ghostStaff .lbl {
+  color: var(--ink-ghost);
+}
+
+.scan {
+  position: absolute;
+  top: 0;
+  height: calc(6 * 1.9em);
+  width: 2px;
+  background: var(--route);
+  opacity: 0;
+  animation: scan 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.scanTrail {
+  position: absolute;
+  top: 0;
+  height: calc(6 * 1.9em);
+  width: 76px;
+  background: linear-gradient(to right, transparent, var(--route-wash));
+  opacity: 0;
+  animation: scan 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes scan {
+  0% {
+    left: 2ch;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: 74ch;
+    opacity: 0;
+  }
+}
+
+.tick {
+  position: absolute;
+  width: 1ch;
+  height: 3px;
+  background: var(--route);
+  opacity: 0.28;
+  animation: tickPulse 2.8s ease-in-out infinite;
+}
+
+@keyframes tickPulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scaleX(1);
+  }
+  30% {
+    opacity: 0.12;
+    transform: scaleX(0.4);
+  }
+}
+
+.processLabel {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.processLabel b {
+  color: var(--route);
+  font-weight: 600;
+}
+
+.processElapsed {
+  font-family: var(--font-tab);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+}
+
+/* ---------- failure ---------- */
+
+.failure {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px 40px 40px 48px;
+  max-width: 62ch;
+}
+
+.failureTag {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--route);
+  border: 1px solid var(--route-line);
+  padding: 4px 9px;
+}
+
+.failureMsg {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.failureHint {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+/* ---------- tab view ---------- */
+
+.tabScroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 22px 28px 28px 40px;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabInner {
+  width: max-content;
+  min-width: 100%;
+}
+
+.system {
+  position: relative;
+  width: max-content;
+  padding: 30px 0 22px;
+  font-family: var(--font-tab);
+  font-size: 16px;
+  line-height: 1.9;
+  letter-spacing: 0;
+  white-space: pre;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.system:first-child {
+  padding-top: 10px;
+}
+
+.system + .system {
+  border-top: 1px solid var(--rule);
+}
+
+.systemLine {
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+.systemLine .lbl {
+  color: var(--ink-2);
+}
+
+.systemLine .fig {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.systemLine .now {
+  background: var(--route);
+  color: var(--route-ink);
+  font-weight: 600;
+  border-radius: 1px;
+}
+
+.systemTime {
+  position: absolute;
+  right: 1ch;
+  top: 8px;
+  z-index: 2;
+  font-family: var(--font-tab);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--ink-3);
+}
+
+.system:first-child .systemTime {
+  top: 0;
+}
+
+.systemTime::before {
+  content: "\00b7";
+  margin-right: 4px;
+  color: var(--route-faint);
+}
+
+.playhead {
+  position: absolute;
+  top: 30px;
+  height: calc(6 * 1.9em);
+  width: 2px;
+  background: var(--route);
+  pointer-events: none;
+  transition: left 0.09s linear;
+  z-index: 3;
+}
+
+.system:first-child .playhead {
+  top: 10px;
+}
+
+.playhead::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: -5px;
+  border: 5px solid transparent;
+  border-top-color: var(--route);
+}
+
+.emptyNote {
+  margin-top: 22px;
+  font-size: 13px;
+  color: var(--ink-2);
+  max-width: 52ch;
+  line-height: 1.6;
+}
+
+/* ---------- side panel ---------- */
+
+.side {
+  grid-area: side;
+  background: var(--paper-2);
+  border-left: 1px solid var(--rule-2);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px;
+  gap: 16px;
+  overflow: auto;
+}
+
+.stamp {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.stampMark {
+  align-self: flex-start;
+  font-family: var(--font-tab);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  padding: 2px 7px 1px;
+}
+
+.stampSub {
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  color: var(--ink-3);
+}
+
+.video {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #000;
+  border: 1px solid var(--rule-2);
+  display: block;
+  object-fit: contain;
+}
+
+.videoPlaceholder {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--rule-2);
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--paper-2) 0 10px,
+    var(--paper-3) 10px 20px
+  );
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.transportBtn {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 1px solid var(--rule-2);
+  background: var(--paper);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  transition: border-color 0.14s ease;
+}
+
+.transportBtn:hover {
+  border-color: var(--ink-2);
+}
+
+.scrub {
+  flex: 1;
+  height: 3px;
+  background: var(--paper-3);
+  position: relative;
+  cursor: pointer;
+}
+
+.scrubFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--route);
+}
+
+.transportTime {
+  font-family: var(--font-tab);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+
+.readouts {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--rule);
+}
+
+.readout {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.readout dt {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.readout dd {
+  margin: 0;
+  font-family: var(--font-tab);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 20ch;
+}
+
+.legend {
+  border-top: 1px solid var(--rule);
+  padding-top: 12px;
+}
+
+.legendHead {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 9px;
+}
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 0;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.glyph {
+  width: 20px;
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+
+.glyphDot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--route);
+}
+
+.glyphOpen {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-2);
+}
+
+.glyphMute {
+  font-family: var(--font-tab);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.glyphChord {
+  width: 15px;
+  height: 11px;
+  border: 1.5px solid var(--route);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.actionsHint {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-3);
+  margin: 0;
+}
+
+.primary {
+  width: 100%;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: var(--route);
+  color: var(--route-ink);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition:
+    background 0.14s ease,
+    transform 0.14s ease;
+}
+
+.primary:hover {
+  background: var(--route-bright);
+}
+
+.primary:active {
+  background: var(--route-press);
+  transform: translateY(1px);
+}
+
+.primary:disabled {
+  background: var(--paper-3);
+  color: var(--ink-ghost);
+  cursor: not-allowed;
+}
+
+.primaryBusy {
+  background: var(--paper-3);
+  color: var(--ink-2);
+  cursor: progress;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.primaryBusy::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  background: var(--route);
+  animation: blink 1s steps(2, jump-none) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.ghost {
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--rule-2);
+  color: var(--ink-2);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  transition:
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+
+.ghost:hover {
+  border-color: var(--ink-3);
+  color: var(--ink);
+}
+
+/* ---------- dock: chord shape ---------- */
+
+.dock {
+  grid-area: dock;
+  background: var(--paper-2);
+  border-top: 1px solid var(--rule-2);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: stretch;
+}
+
+.chordBox {
+  padding: 16px 28px;
+  border-right: 1px solid var(--rule);
+  display: flex;
+  gap: 22px;
+  align-items: center;
+}
+
+.chordDiagram {
+  display: block;
+  flex: none;
+}
+
+.chordMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chordMetaK {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.chordMetaV {
+  font-family: var(--font-tab);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+}
+
+.chordMetaN {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.dockNote {
+  padding: 16px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.dockNoteK {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.dockNote p {
+  font-size: 12px;
+  color: var(--ink-2);
+  max-width: 60ch;
+  line-height: 1.55;
+}
+
+.dockNote code {
+  font-family: var(--font-tab);
+  background: var(--paper-3);
+  padding: 1px 5px;
+  color: var(--ink);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 880px) {
+  .shell {
+    grid-template:
+      "stage" auto
+      "side" auto
+      "dock" var(--dock-h)
+      / 1fr;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .side {
+    border-left: none;
+    border-top: 1px solid var(--rule-2);
+  }
+
+  .actions {
+    margin-top: 12px;
+  }
+
+  .stage {
+    min-height: 60vh;
+  }
+
+  .video,
+  .videoPlaceholder {
+    width: auto;
+    max-width: 100%;
+    max-height: 38vh;
+    margin-inline: auto;
+  }
+
+  .stageHead,
+  .tabScroll,
+  .processing,
+  .failure {
+    padding-left: 24px;
+  }
+
+  .system,
+  .ghostStaff {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .headRule,
+  .headDim {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .dock {
+    grid-template-columns: 1fr;
+  }
+
+  .dockNote {
+    display: none;
+  }
+
+  .chordBox {
+    border-right: none;
+    justify-content: center;
+  }
+}

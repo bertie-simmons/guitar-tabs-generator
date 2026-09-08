@@ -1,11 +1,5 @@
+import Transcriber from "./Transcriber";
+
 export default function Home() {
-  return (
-    <div>
-      <main>
-        <div>
-          <h1>Guitar Tablature Generator</h1>
-        </div>
-      </main>
-    </div>
-  );
+  return <Transcriber />;
 }
