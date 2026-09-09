@@ -1,7 +1,7 @@
 import pytest
 
-from models import Note
-from tabs import candidate_positions, notes_to_tab, pick_string_and_fret
+from gtab.models import Note
+from gtab.pipeline.tabs import candidate_positions, notes_to_tab, pick_string_and_fret
 
 
 def note(midi: float, start: float = 0.0) -> Note:

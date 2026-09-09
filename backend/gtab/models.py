@@ -39,9 +39,14 @@ class Tab(BaseModel):
 
 
 class Job(BaseModel):
-    """Tracks one uploaded video through the pipeline."""
+    """Tracks one uploaded video through the pipeline.
+
+    `source_path` is where the API saved the upload; the worker reads it from
+    here so it only needs the job id to do its work.
+    """
 
     id: str
     status: JobStatus = "pending"
+    source_path: str | None = None
     result: Tab | None = None
     error: str | None = None

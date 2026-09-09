@@ -50,4 +50,5 @@ __pycache__/
 # backend runtime artifacts
 backend/uploads/
 backend/audio_cache/
+backend/.gtab-state/
 backend/tests/fixtures/*.wav

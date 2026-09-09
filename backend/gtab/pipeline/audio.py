@@ -11,8 +11,8 @@ from pathlib import Path
 import librosa
 import numpy as np
 
-from constants import SAMPLE_RATE, SILENCE_THRESHOLD
-from models import Note
+from gtab.pipeline.constants import SAMPLE_RATE, SILENCE_THRESHOLD
+from gtab.models import Note
 
 logger = logging.getLogger(__name__)
 

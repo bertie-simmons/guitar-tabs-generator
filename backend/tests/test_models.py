@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from models import Job, Note, Tab, TabPosition
+from gtab.models import Job, Note, Tab, TabPosition
 
 # === valid construction ==================================================
 

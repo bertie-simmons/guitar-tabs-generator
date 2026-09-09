@@ -7,8 +7,8 @@ tab does not jump around the neck.
 
 import logging
 
-from constants import MAX_FRET, OPEN_STRING_PITCHES
-from models import Note, Tab, TabPosition
+from gtab.pipeline.constants import MAX_FRET, OPEN_STRING_PITCHES
+from gtab.models import Note, Tab, TabPosition
 
 logger = logging.getLogger(__name__)
 

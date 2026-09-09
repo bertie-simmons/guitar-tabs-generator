@@ -13,34 +13,50 @@ on:
       - .github/workflows/backend.yml
 
 jobs:
-  backend:
+  import-boundary:
+    # The API must build and import without any pipeline dependency. Install
+    # only the API requirements so a regression fails here loudly.
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: backend
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements-api.txt
+      - run: pip install -r requirements-api.txt
+      - name: API imports with no pipeline deps installed
+        run: python -c "import gtab.api.main; print(gtab.api.main.app.title)"
+
+  tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: pip
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: backend/requirements-dev.txt
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
 
-      - name: Verify FastAPI app import
-        run: python -c "from main import app; print(app.title)"
+      - name: Verify API and worker entrypoints
+        run: |
+          python -c "from gtab.api.main import app; print(app.title)"
+          python -c "from gtab.worker import process_job, run"
 
       - name: Run tests
         run: pytest -m "not slow" -q
