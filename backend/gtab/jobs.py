@@ -70,9 +70,7 @@ class JobQueue(ABC):
     def ack(self, job_id: str) -> None:
         """Mark a claimed job id as handled so it is not redelivered.
 
-        Called whatever the outcome - a failed job is recorded as ``failed`` in
-        the store, not retried. Poison-message handling is left for the Azure
-        implementation.
+        A failed job is recorded as ``failed`` in the store, not retried
         """
 
 
