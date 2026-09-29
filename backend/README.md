@@ -15,19 +15,27 @@ separate container images) - the API never imports the pipeline.
 
 | module               | responsibility                                                        |
 | -------------------- | -------------------------------------------------------------------- |
-| `gtab.api.main`      | HTTP endpoints; saves the upload, records the job, enqueues its id    |
-| `gtab.worker.runner` | `process_job` (one job) and `run` (the claim loop)                    |
+| `gtab.api.main`      | HTTP endpoints; stores the upload, records the job, enqueues its id   |
+| `gtab.worker.runner` | `process_job` (one job), `handle_claimed` (ack/release), `run` (loop) |
 | `gtab.worker.__main__` | `python -m gtab.worker` - runs `run`                                |
 | `gtab.pipeline`      | pure transforms: `extract_audio`, `detect_notes`, `notes_to_tab`      |
 | `gtab.jobs`          | `JobStore` + `JobQueue` - the seam; `memory` and `file` backends      |
+| `gtab.uploads`       | `UploadStore` - where uploads wait for the worker; `local` backend     |
 | `gtab.models`        | pydantic models: `Note`, `TabPosition`, `Tab`, `Job`                  |
 | `gtab.config`        | env-overridable paths, backend selection, CORS origins               |
 | `main.py`            | thin shim so `uvicorn main:app` still resolves to the API app         |
 
-Flow: `POST /upload` writes the video, `job_store.create(...)` a `pending` job,
-`job_queue.enqueue(job_id)`, and returns. A worker `claim`s the id, runs the
-pipeline, and `save`s `done` + the tab or `failed` + an error. The client polls
-`/status` then fetches `/result`.
+Flow: `POST /upload` `put`s the video in the upload store, `job_store.create(...)`
+a `pending` job whose `source_path` is the upload's name, `job_queue.enqueue(job_id)`,
+and returns. A worker `claim`s the id, downloads the upload into a temp dir, runs
+the pipeline, and `save`s `done` + the tab or `failed` + an error. The client
+polls `/status` then fetches `/result`.
+
+A queue entry is only `ack`ed once the job is finished - `done`, or `failed` on
+input that can never work (no audio track, upload missing). An unexpected error
+`release`s it back onto the queue for another go, up to `GTAB_MAX_ATTEMPTS` starts
+(counted in `Job.attempts`, so a worker that dies mid-job counts too). The
+upload is deleted only when the job is finished, since a retry needs it.
 
 ### Job store / queue backends
 
@@ -41,9 +49,9 @@ and **Azure Queue Storage** (the queue). Going to Azure means adding
 `AzureTableJobStore` / `AzureQueueJobQueue` classes and a `configure()` branch -
 nothing in `gtab.api` or `gtab.worker` changes.
 
-> Not yet cross-container: the upload is still a local file path in
-> `Job.source_path`. Separate containers need it in blob storage (the API
-> uploads, the worker downloads). That is the next step, with the Azure backends.
+> Not yet cross-container: the only upload store is the `local` one, so the
+> API and worker must share `GTAB_UPLOAD_DIR` (one machine or a shared volume).
+> An Azure Blob Storage `UploadStore` is the next step, with the Azure backends.
 
 ## API
 
@@ -60,8 +68,8 @@ nothing in `gtab.api` or `gtab.worker` changes.
 | ------------------- | ----------------------- | -------------------------------------------- |
 | `GTAB_JOBS_BACKEND` | `file`                  | `file` or `memory` (see above)                 |
 | `GTAB_STATE_DIR`    | `.gtab-state`            | where the `file` backend keeps store + queue   |
-| `GTAB_UPLOAD_DIR`   | `uploads`               | where uploaded videos are written              |
-| `GTAB_AUDIO_DIR`    | `audio_cache`           | where extracted WAV audio is written           |
+| `GTAB_UPLOAD_DIR`   | `uploads`               | where the `local` upload store keeps videos    |
+| `GTAB_MAX_ATTEMPTS` | `3`                     | worker starts per job before it is `failed`    |
 | `GTAB_CORS_ORIGINS` | `http://localhost:3000` | comma-separated allowed browser origins         |
 
 ## Running
