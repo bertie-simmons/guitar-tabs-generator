@@ -1,0 +1,29 @@
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    environment:
+      GTAB_JOBS_BACKEND: file
+      GTAB_STATE_DIR: /data/state
+      GTAB_UPLOAD_DIR: /data/uploads
+      GTAB_CORS_ORIGINS: http://localhost:3000
+    volumes:
+      - gtab-data:/data
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    environment:
+      GTAB_JOBS_BACKEND: file
+      GTAB_STATE_DIR: /data/state
+      GTAB_UPLOAD_DIR: /data/uploads
+      GTAB_AUDIO_DIR: /tmp/audio
+    volumes:
+      - gtab-data:/data
+
+volumes:
+  gtab-data:
