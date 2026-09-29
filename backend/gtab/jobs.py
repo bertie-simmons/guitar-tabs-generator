@@ -68,9 +68,20 @@ class JobQueue(ABC):
 
     @abstractmethod
     def ack(self, job_id: str) -> None:
-        """Mark a claimed job id as handled so it is not redelivered.
+        """Remove a claimed job id for good, so it is not redelivered.
 
-        A failed job is recorded as ``failed`` in the store, not retried
+        Only called once the job is finished - ``done``, or ``failed`` in a way
+        a retry would not fix. Until then the id stays claimed, so a worker
+        that dies mid-job leaves it to be delivered again.
+        """
+
+    @abstractmethod
+    def release(self, job_id: str) -> None:
+        """Give a claimed job id back so a worker picks it up again later.
+
+        Called when the job hit a problem that might pass (an unexpected error
+        in the pipeline, a failed download). `Job.attempts` in the store is
+        what stops it being retried forever.
         """
 
 
@@ -130,6 +141,9 @@ class InMemoryJobQueue(JobQueue):
     def ack(self, job_id: str) -> None:  # nothing to do - get() already removed it
         pass
 
+    def release(self, job_id: str) -> None:
+        self._q.put(job_id)
+
 
 # === file backend =========================================================
 
@@ -176,19 +190,29 @@ class FileJobQueue(JobQueue):
     ``enqueue`` writes a file into ``ready/`` named with a nanosecond timestamp
     so listing sorts oldest-first. ``claim`` renames one file into ``inflight/``;
     the rename is atomic, so if two workers race, exactly one wins. ``ack``
-    deletes the inflight file.
+    deletes the inflight file; ``release`` moves it to the back of ``ready/``.
+
+    Unlike Queue Storage there is no visibility timeout: an id claimed by a
+    worker that is killed stays in ``inflight/`` until someone moves it back.
     """
 
     def __init__(self, root: Path | str) -> None:
         base = Path(root) / "queue"
         self._ready = base / "ready"
         self._inflight = base / "inflight"
+        self._last_ns = 0
         self._ready.mkdir(parents=True, exist_ok=True)
         self._inflight.mkdir(parents=True, exist_ok=True)
 
     def enqueue(self, job_id: str) -> None:
-        entry = self._ready / f"{time.time_ns():020d}-{job_id}"
+        entry = self._ready / self._entry_name(job_id)
         entry.write_text(job_id, "utf-8")
+
+    def _entry_name(self, job_id: str) -> str:
+        # The clock can be coarse (Windows), so keep this process's names
+        # strictly increasing - otherwise same-tick entries sort by job id.
+        self._last_ns = max(time.time_ns(), self._last_ns + 1)
+        return f"{self._last_ns:020d}-{job_id}"
 
     def claim(self, timeout: float | None = None) -> str | None:
         deadline = None if timeout is None else time.monotonic() + timeout
@@ -205,9 +229,16 @@ class FileJobQueue(JobQueue):
             time.sleep(0.2)
 
     def ack(self, job_id: str) -> None:
-        for entry in self._inflight.iterdir():
-            if entry.name.endswith(f"-{job_id}"):
-                entry.unlink(missing_ok=True)
+        for entry in self._inflight_entries(job_id):
+            entry.unlink(missing_ok=True)
+
+    def release(self, job_id: str) -> None:
+        # A fresh timestamp puts it behind jobs that haven't had a go yet.
+        for entry in self._inflight_entries(job_id):
+            entry.rename(self._ready / self._entry_name(job_id))
+
+    def _inflight_entries(self, job_id: str) -> list[Path]:
+        return [e for e in self._inflight.iterdir() if e.name.endswith(f"-{job_id}")]
 
     def clear(self) -> None:
         """Drop every queued and in-flight id. Used by tests."""
