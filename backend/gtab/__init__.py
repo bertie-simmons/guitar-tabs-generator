@@ -8,7 +8,7 @@ The package is split into three layers:
 
 ``gtab.models`` holds the pydantic objects shared across all three, and
 ``gtab.jobs`` is the job store that the API writes to and the worker reads from.
-Today everything runs in one process against an in-memory store; the split keeps
+Today everything runs with two processes; the split keeps
 the API and worker independently deployable (Docker / Azure) once that store is
 swapped for something out-of-process.
 """

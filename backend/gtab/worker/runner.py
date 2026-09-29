@@ -62,7 +62,17 @@ def process_job(job_id: str, store: JobStore | None = None) -> Outcome:
     if not job.source_path:
         _fail(store, job, "job has no source video")
         return
+    if job.attempts >= MAX_ATTEMPTS:
+        # Every earlier start ended without recording an outcome - most likely
+        # the worker was killed mid-job. Don't let it take another one down
+        logger.warning("job %s gave up after %d attempts", job_id, job.attempts)
+        _fail(store, job, f"gave up after {MAX_ATTEMPTS} attempts")
+        _discard_upload(job)
+        return Outcome.FINISHED
 
+    # Count the start before any work, so a worker that dies mid-job still
+    # uses up an attempt
+    job.attempts += 1
     job.status = "processing"
     store.save(job)
 
