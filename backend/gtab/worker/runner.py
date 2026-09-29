@@ -1,12 +1,18 @@
 """Turn queued jobs into finished tabs.
 
 `process_job` is the unit of work: given a job id it reads the job from the
-store, runs `extract_audio -> detect_notes -> notes_to_tab`, and writes `done` +
-the tab or `failed` + an error message back. It never raises - a broken job
-becomes a failed job.
+store, downloads the upload into a temp dir, runs `extract_audio ->
+detect_notes -> notes_to_tab`, and writes `done` + the tab or `failed` + an
+error message back. It returns whether the job is finished, or should go back
+on the queue for another attempt.
 
-`run` is the consumer loop: claim an id off the queue, process it, ack it,
-repeat, until SIGINT/SIGTERM. `python -m gtab.worker` calls it.
+`handle_claimed` acts on that: ack a finished job's queue entry, release an
+unfinished one. `run` is the consumer loop around it - claim, handle, repeat,
+until SIGINT/SIGTERM. `python -m gtab.worker` calls it.
+
+A job is retried when something unexpected goes wrong (a pipeline bug, a
+flaky download, a worker killed mid-job), up to `MAX_ATTEMPTS` starts. Input
+that can never work - no audio track, upload missing - fails on the first go.
 
 `extract_audio` and `detect_notes` are imported by name so tests can monkeypatch
 them on this module.
@@ -98,6 +104,31 @@ def _fail(store: JobStore, job: Job, message: str) -> None:
     store.save(job)
 
 
+def _discard_upload(job: Job) -> None:
+    """Delete a finished job's upload. Only once it is finished - a retry
+    needs it."""
+    if not job.source_path:
+        return
+    try:
+        uploads.upload_store.delete(job.source_path)
+    except Exception:  # noqa: BLE001 - an orphaned upload beats a failed job
+        logger.exception("could not delete upload for job %s", job.id)
+
+
+def handle_claimed(job_id: str) -> Outcome:
+    """Process a claimed job, then ack or release its queue entry."""
+    try:
+        outcome = process_job(job_id)
+    except Exception:  # noqa: BLE001 - e.g. the store is unreachable
+        logger.exception("job %s: worker error - releasing it for another go", job_id)
+        outcome = Outcome.RETRY
+    if outcome is Outcome.FINISHED:
+        jobs.job_queue.ack(job_id)
+    else:
+        jobs.job_queue.release(job_id)
+    return outcome
+
+
 def run(poll_timeout: float = 2.0) -> None:
     """Claim and process jobs until interrupted.
 
@@ -120,8 +151,5 @@ def run(poll_timeout: float = 2.0) -> None:
         if job_id is None:
             continue
         logger.info("processing job %s", job_id)
-        try:
-            process_job(job_id)
-        finally:
-            jobs.job_queue.ack(job_id)
+        handle_claimed(job_id)
     logger.info("worker stopped")
