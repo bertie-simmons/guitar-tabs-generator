@@ -17,7 +17,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from gtab import jobs
-from gtab.config import CORS_ORIGINS, UPLOAD_DIR, ensure_dirs
+from gtab.config import CORS_ORIGINS, UPLOAD_DIR
 from gtab.models import Job, Tab
 
 logging.basicConfig(level=logging.INFO)
@@ -26,7 +26,8 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    ensure_dirs()
+    # Only the upload dir - AUDIO_DIR belongs to the worker, which creates it.
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     yield
 
 

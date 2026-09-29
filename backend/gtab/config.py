@@ -32,9 +32,3 @@ CORS_ORIGINS = [
     for origin in os.environ.get("GTAB_CORS_ORIGINS", "http://localhost:3000").split(",")
     if origin.strip()
 ]
-
-
-def ensure_dirs() -> None:
-    """Create the upload and audio directories if they do not exist yet."""
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    AUDIO_DIR.mkdir(parents=True, exist_ok=True)
