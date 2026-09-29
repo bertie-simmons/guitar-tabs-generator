@@ -83,6 +83,20 @@ def test_claim_then_ack_does_not_redeliver(jq):
     assert jq.claim(timeout=0) is None
 
 
+def test_release_redelivers(jq):
+    jq.enqueue("a")
+    jq.release(jq.claim(timeout=0))
+    assert jq.claim(timeout=0) == "a"
+
+
+def test_release_goes_to_the_back(jq):
+    jq.enqueue("a")
+    jq.enqueue("b")
+    jq.release(jq.claim(timeout=0))  # "a" had a go and failed
+    assert jq.claim(timeout=0) == "b"
+    assert jq.claim(timeout=0) == "a"
+
+
 # === file backend survives a "restart" ===================================
 
 

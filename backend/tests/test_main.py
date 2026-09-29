@@ -1,22 +1,14 @@
 import io
 
-import pytest
 from fastapi.testclient import TestClient
 
+from gtab import jobs, uploads
 from gtab.api import main as api_main
 from gtab.models import Note
 from gtab.pipeline.audio import AudioExtractionError
 from gtab.worker import runner
 
 client = TestClient(api_main.app)
-
-
-@pytest.fixture(autouse=True)
-def upload_dirs(monkeypatch, tmp_path):
-    """Per-test upload / audio dirs so nothing leaks to the repo."""
-    monkeypatch.setattr(api_main, "UPLOAD_DIR", tmp_path / "uploads")
-    monkeypatch.setattr(runner, "AUDIO_DIR", tmp_path / "audio")
-    (tmp_path / "uploads").mkdir()
 
 
 def fake_upload(name: str = "clip.mp4") -> dict:
@@ -32,8 +24,15 @@ def test_rejects_unsupported_file_type():
     assert resp.status_code == 400
 
 
-def test_upload_enqueues_without_processing():
+def test_upload_enqueues_without_processing(tmp_path):
     job_id = client.post("/upload", files=fake_upload()).json()["job_id"]
+
+    # The job points at the stored upload by name, not by a local path.
+    source = jobs.job_store.get(job_id).source_path
+    assert source == f"{job_id}.mp4"
+    uploads.upload_store.download_to(source, tmp_path / "copy.mp4")
+    assert (tmp_path / "copy.mp4").read_bytes() == b"not a real video"
+
     # The API only enqueues - nothing runs until a worker claims the job.
     assert client.get(f"/status/{job_id}").json()["status"] == "pending"
     assert client.get(f"/result/{job_id}").status_code == 409
