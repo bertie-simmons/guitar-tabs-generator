@@ -14,30 +14,45 @@ them on this module.
 
 import logging
 import signal
+import tempfile
+from enum import Enum
 from pathlib import Path
 
-from gtab import jobs
-from gtab.config import AUDIO_DIR
+from gtab import jobs, uploads
+from gtab.config import MAX_ATTEMPTS
 from gtab.jobs import JobStore
 from gtab.models import Job
 from gtab.pipeline.audio import AudioExtractionError, detect_notes, extract_audio
 from gtab.pipeline.tabs import notes_to_tab
+from gtab.uploads import UploadNotFoundError
 
 logger = logging.getLogger(__name__)
 
 
-def process_job(job_id: str, store: JobStore | None = None) -> None:
+class Outcome(Enum):
+    FINISHED = "finished"  # done or failed for good - ack the queue entry
+    RETRY = "retry"  # might work next time - release the queue entry
+
+
+def process_job(job_id: str, store: JobStore | None = None) -> Outcome:
     """Process the job with `job_id`, updating its status in `store`.
 
     `store` defaults to the shared `job_store`; it is a parameter so a test or a
-    standalone worker can pass its own.
+    standalone worker can pass its own. Pipeline errors never escape; errors
+    talking to the store itself do, and the caller should retry the job.
     """
     store = store or jobs.job_store
 
     job = store.get(job_id)
     if job is None:
         logger.warning("worker asked for unknown job %s", job_id)
-        return
+        return Outcome.FINISHED
+    if job.status in ("done", "failed"):
+        # Delivered again after it finished - a worker saved the result but
+        # died before acking. Nothing to redo.
+        logger.info("job %s is already %s - skipping", job_id, job.status)
+        _discard_upload(job)
+        return Outcome.FINISHED
     if not job.source_path:
         _fail(store, job, "job has no source video")
         return
@@ -45,24 +60,36 @@ def process_job(job_id: str, store: JobStore | None = None) -> None:
     job.status = "processing"
     store.save(job)
 
-    video_path = Path(job.source_path)
-    audio_path = AUDIO_DIR / f"{job_id}.wav"
-    AUDIO_DIR.mkdir(parents=True, exist_ok=True)
-
     try:
-        extract_audio(video_path, audio_path)
-        notes = detect_notes(audio_path)
-        job.result = notes_to_tab(notes)
-        job.status = "done"
+        with tempfile.TemporaryDirectory(prefix=f"gtab-{job_id}-") as scratch:
+            video_path = Path(scratch) / Path(job.source_path).name
+            audio_path = Path(scratch) / "audio.wav"
+            uploads.upload_store.download_to(job.source_path, video_path)
+            extract_audio(video_path, audio_path)
+            job.result = notes_to_tab(detect_notes(audio_path))
+    except (UploadNotFoundError, AudioExtractionError) as exc:
+        logger.warning("job %s failed: %s", job_id, exc)
+        _fail(store, job, str(exc))
+        _discard_upload(job)
+        return Outcome.FINISHED
+    except Exception as exc:  # noqa: BLE001 - unexpected -> retry, then fail
+        if job.attempts >= MAX_ATTEMPTS:
+            logger.exception("job %s failed on its last attempt", job_id)
+            _fail(store, job, str(exc))
+            _discard_upload(job)
+            return Outcome.FINISHED
+        logger.exception(
+            "job %s failed on attempt %d of %d - will retry",
+            job_id, job.attempts, MAX_ATTEMPTS,
+        )
+        job.status = "pending"
         store.save(job)
-    except AudioExtractionError as exc:
-        logger.warning("job %s failed during extraction: %s", job_id, exc)
-        _fail(store, job, str(exc))
-    except Exception as exc:  # noqa: BLE001 - any pipeline error -> failed job
-        logger.exception("job %s failed", job_id)
-        _fail(store, job, str(exc))
-    finally:
-        video_path.unlink(missing_ok=True)
+        return Outcome.RETRY
+
+    job.status = "done"
+    store.save(job)
+    _discard_upload(job)
+    return Outcome.FINISHED
 
 
 def _fail(store: JobStore, job: Job, message: str) -> None:
