@@ -1,0 +1,9 @@
+# Worker: the audio -> notes -> tab pipeline. Also needs ffmpeg on PATH (a system
+# package, not pip). This is the heavy image.
+-r requirements-base.txt
+
+basic-pitch==0.4.0
+tensorflow==2.15.0              # inference backend for basic-pitch
+librosa==0.11.0
+soundfile==0.14.0
+numpy<2                         # tensorflow / basic-pitch are not numpy 2 ready

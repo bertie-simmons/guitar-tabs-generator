@@ -1,0 +1,6 @@
+# Everything, for running the whole test suite locally and in CI.
+-r requirements-api.txt
+-r requirements-worker.txt
+
+pytest==9.1.1
+httpx==0.28.1                   # required by fastapi's TestClient

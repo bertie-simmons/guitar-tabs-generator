@@ -1,0 +1,26 @@
+FROM python:3.11-slim
+
+# path defaults are relative (fine for local dev) and would resolve
+# under /app, which the non-root user can't write. Point them at /data.
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    GTAB_STATE_DIR=/data/state \
+    GTAB_UPLOAD_DIR=/data/uploads
+
+WORKDIR /app
+
+COPY requirements-base.txt requirements-api.txt ./
+RUN pip install --no-cache-dir -r requirements-api.txt
+
+COPY gtab/__init__.py gtab/config.py gtab/jobs.py gtab/models.py gtab/uploads.py gtab/
+COPY gtab/api gtab/api/
+
+# Same uid - api and worker can read and write each other's files
+RUN groupadd --gid 10001 app \
+    && useradd --uid 10001 --gid app --create-home app \
+    && mkdir -p /data \
+    && chown app:app /data
+USER app
+EXPOSE 8000
+
+CMD ["uvicorn", "gtab.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

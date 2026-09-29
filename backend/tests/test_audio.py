@@ -5,8 +5,8 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from audio import AudioExtractionError, detect_notes, extract_audio, load_audio
-from constants import SAMPLE_RATE
+from gtab.pipeline.audio import AudioExtractionError, detect_notes, extract_audio, load_audio
+from gtab.pipeline.constants import SAMPLE_RATE
 
 # === extract_audio ========================================================
 
@@ -17,7 +17,7 @@ def test_missing_file_raises():
 
 
 def test_ffmpeg_failure_raises(tmp_path):
-    with patch("audio.subprocess.run") as mock_run:
+    with patch("gtab.pipeline.audio.subprocess.run") as mock_run:
         mock_run.side_effect = subprocess.CalledProcessError(
             1, "ffmpeg", stderr="some error"
         )
@@ -26,14 +26,14 @@ def test_ffmpeg_failure_raises(tmp_path):
 
 
 def test_ffmpeg_missing_binary_raises(tmp_path):
-    with patch("audio.subprocess.run", side_effect=FileNotFoundError()):
+    with patch("gtab.pipeline.audio.subprocess.run", side_effect=FileNotFoundError()):
         with pytest.raises(AudioExtractionError, match="ffmpeg is not installed"):
             extract_audio(Path(__file__), tmp_path / "out.wav")
 
 
 def test_calls_ffmpeg_with_correct_args(tmp_path):
     out = tmp_path / "out.wav"
-    with patch("audio.subprocess.run") as mock_run:
+    with patch("gtab.pipeline.audio.subprocess.run") as mock_run:
         out.write_bytes(b"fake wav data")  # so the empty-output check passes
         extract_audio(Path(__file__), out)
         args = mock_run.call_args[0][0]

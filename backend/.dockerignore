@@ -1,0 +1,18 @@
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.venv
+venv
+.env
+
+# local runtime state
+.gtab-state
+uploads
+audio_cache
+
+# stuff
+tests
+pytest.ini
+requirements-dev.txt
+Dockerfile.*
+README.md

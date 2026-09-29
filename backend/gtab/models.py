@@ -39,9 +39,20 @@ class Tab(BaseModel):
 
 
 class Job(BaseModel):
-    """Tracks one uploaded video through the pipeline."""
+    """Tracks one uploaded video through the pipeline.
+
+    `source_path` is the name the API stored the upload under in
+    `gtab.uploads` - a file name or a blob name, never a local path - so the
+    worker only needs the job id to do its work.
+
+    `attempts` counts how many times a worker has started the job. It lives on
+    the job rather than the queue message so every queue backend gets the same
+    retry limit, and a worker that dies mid-job still counts as a go.
+    """
 
     id: str
     status: JobStatus = "pending"
+    source_path: str | None = None
     result: Tab | None = None
     error: str | None = None
+    attempts: int = Field(default=0, ge=0)

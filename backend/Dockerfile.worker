@@ -1,0 +1,33 @@
+FROM python:3.11-slim
+
+# Path defaults as in Dockerfile.api. Per-job scratch files go in /tmp.
+# NUMBA_CACHE_DIR: librosa caches compiled code, and site-packages isn't
+# writable by the non-root user.
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    GTAB_STATE_DIR=/data/state \
+    GTAB_UPLOAD_DIR=/data/uploads \
+    NUMBA_CACHE_DIR=/tmp/numba-cache \
+    TF_CPP_MIN_LOG_LEVEL=2
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements-base.txt requirements-worker.txt ./
+RUN pip install --no-cache-dir -r requirements-worker.txt
+
+COPY gtab/__init__.py gtab/config.py gtab/jobs.py gtab/models.py gtab/uploads.py gtab/
+COPY gtab/pipeline gtab/pipeline/
+COPY gtab/worker gtab/worker/
+
+# same uid
+RUN groupadd --gid 10001 app \
+    && useradd --uid 10001 --gid app --create-home app \
+    && mkdir -p /data \
+    && chown app:app /data
+USER app
+
+CMD ["python", "-m", "gtab.worker"]

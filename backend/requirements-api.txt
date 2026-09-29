@@ -1,0 +1,7 @@
+# API service: HTTP + job bookkeeping only. No audio / ML dependencies - keep it
+# that way (see tests/test_import_boundary.py).
+-r requirements-base.txt
+
+fastapi==0.137.0
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20        # multipart form parsing, for file uploads
