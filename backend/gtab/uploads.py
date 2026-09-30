@@ -20,6 +20,16 @@ class UploadNotFoundError(LookupError):
     """There is no upload with that name. Retrying will not make one appear."""
 
 
+def check_upload_name(name: str) -> None:
+    """Refuse a name that isn't a single plain file name.
+
+    Names are built by the API from a uuid, but refuse anything that would step
+    outside the directory (or into a blob "folder") all the same.
+    """
+    if not name or Path(name).name != name or "\\" in name:
+        raise ValueError(f"invalid upload name {name!r}")
+
+
 class UploadStore(ABC):
     """Store, fetch and remove uploaded files by name."""
 
@@ -47,10 +57,7 @@ class LocalUploadStore(UploadStore):
         self._root.mkdir(parents=True, exist_ok=True)
 
     def _path(self, name: str) -> Path:
-        # Names are built by the API from a uuid, but refuse anything that
-        # would step outside the directory all the same.
-        if not name or Path(name).name != name:
-            raise ValueError(f"invalid upload name {name!r}")
+        check_upload_name(name)
         return self._root / name
 
     def put(self, name: str, data: BinaryIO) -> None:
@@ -72,6 +79,10 @@ class LocalUploadStore(UploadStore):
 
 
 def _make_store(backend: str, root: Path | str) -> UploadStore:
+    if backend == "azure":
+        from gtab.azure_storage import make_upload_store  # loads the Azure SDK
+
+        return make_upload_store()
     # "memory" and "file" both keep uploads on local disk
     return LocalUploadStore(root)
 
