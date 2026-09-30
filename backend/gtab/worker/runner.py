@@ -61,7 +61,7 @@ def process_job(job_id: str, store: JobStore | None = None) -> Outcome:
         return Outcome.FINISHED
     if not job.source_path:
         _fail(store, job, "job has no source video")
-        return
+        return Outcome.FINISHED
     if job.attempts >= MAX_ATTEMPTS:
         # Every earlier start ended without recording an outcome - most likely
         # the worker was killed mid-job. Don't let it take another one down
