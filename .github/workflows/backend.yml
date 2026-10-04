@@ -14,8 +14,6 @@ on:
 
 jobs:
   import-boundary:
-    # The API must build and import without any pipeline dependency. Install
-    # only the API requirements so a regression fails here loudly.
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -58,5 +56,13 @@ jobs:
           python -c "from gtab.api.main import app; print(app.title)"
           python -c "from gtab.worker import process_job, run"
 
+      - name: Start Azurite
+        # for the azure backend's tests; they skip without it
+        run: >-
+          docker run -d -p 10000-10002:10000-10002
+          mcr.microsoft.com/azure-storage/azurite
+          azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+          --skipApiVersionCheck --loose
+
       - name: Run tests
-        run: pytest -m "not slow" -q
+        run: pytest -m "not slow" -q -rs
