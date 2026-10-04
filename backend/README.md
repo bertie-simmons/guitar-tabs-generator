@@ -21,6 +21,7 @@ separate container images) - the API never imports the pipeline.
 | `gtab.pipeline`      | pure transforms: `extract_audio`, `detect_notes`, `notes_to_tab`      |
 | `gtab.jobs`          | `JobStore` + `JobQueue` - the seam; `memory` and `file` backends      |
 | `gtab.uploads`       | `UploadStore` - where uploads wait for the worker; `local` backend     |
+| `gtab.azure_storage` | the `azure` backends: Table job store, Queue job queue, Blob uploads  |
 | `gtab.models`        | pydantic models: `Note`, `TabPosition`, `Tab`, `Job`                  |
 | `gtab.config`        | env-overridable paths, backend selection, CORS origins               |
 | `main.py`            | thin shim so `uvicorn main:app` still resolves to the API app         |
@@ -42,16 +43,26 @@ upload is deleted only when the job is finished, since a retry needs it.
 | backend  | store              | queue                          | use                                             |
 | -------- | ------------------ | ------------------------------ | ---------------------------------------------- |
 | `memory` | dict               | `queue.Queue`                  | tests; API + worker in one process             |
-| `file`   | JSON under `STATE_DIR` | directory queue under `STATE_DIR` | **default** - API and worker as two processes |
+| `file`   | JSON under `STATE_DIR` | directory queue under `STATE_DIR` | **default** - API and worker as two processes on one machine |
+| `azure`  | Table Storage      | Queue Storage                  | separate containers; Azurite locally, a storage account in Azure |
 
-The `file` backend is the local stand-in for **Azure Table Storage** (the store)
-and **Azure Queue Storage** (the queue). Going to Azure means adding
-`AzureTableJobStore` / `AzureQueueJobQueue` classes and a `configure()` branch -
-nothing in `gtab.api` or `gtab.worker` changes.
+`memory` and `file` keep uploads in `GTAB_UPLOAD_DIR`, so the API and worker
+must share it. `azure` keeps them in Blob Storage.
 
-> Not yet cross-container: the only upload store is the `local` one, so the
-> API and worker must share `GTAB_UPLOAD_DIR` (one machine or a shared volume).
-> An Azure Blob Storage `UploadStore` is the next step, with the Azure backends.
+Notes on the `azure` backend (`gtab.azure_storage`):
+
+- **Auth**: a connection string (Azurite) or a storage account name, in which
+  case it signs in with `DefaultAzureCredential` - a managed identity in
+  Container Apps (set `AZURE_CLIENT_ID` for a user-assigned one), `az login` on
+  your machine. The identity needs Storage Blob / Queue / Table *Data
+  Contributor* on the account.
+- **Queue visibility timeout**: a claimed message is hidden, not removed, for
+  `GTAB_AZURE_QUEUE_VISIBILITY_TIMEOUT` seconds. It must outlast the slowest
+  job, or another worker picks the job up mid-run. A worker that dies leaves its
+  message to reappear after that long.
+- **Table size**: the job JSON is split over `data_0`, `data_1`, ... properties;
+  an entity is capped at 1 MiB, which is tens of thousands of tab positions.
+- The container, table and queue are created on first use if missing.
 
 ## API
 
@@ -66,11 +77,17 @@ nothing in `gtab.api` or `gtab.worker` changes.
 
 | env var             | default                 | purpose                                        |
 | ------------------- | ----------------------- | -------------------------------------------- |
-| `GTAB_JOBS_BACKEND` | `file`                  | `file` or `memory` (see above)                 |
+| `GTAB_JOBS_BACKEND` | `file`                  | `file`, `memory` or `azure` (see above); anything else fails at startup |
 | `GTAB_STATE_DIR`    | `.gtab-state`            | where the `file` backend keeps store + queue   |
 | `GTAB_UPLOAD_DIR`   | `uploads`               | where the `local` upload store keeps videos    |
 | `GTAB_MAX_ATTEMPTS` | `3`                     | worker starts per job before it is `failed`    |
 | `GTAB_CORS_ORIGINS` | `http://localhost:3000` | comma-separated allowed browser origins         |
+| `GTAB_AZURE_STORAGE_CONNECTION_STRING` | -   | `azure`: connection string (Azurite)           |
+| `GTAB_AZURE_STORAGE_ACCOUNT` | -             | `azure`: account name, with managed identity   |
+| `GTAB_AZURE_UPLOAD_CONTAINER` | `uploads`    | `azure`: blob container for uploads            |
+| `GTAB_AZURE_JOB_TABLE` | `jobs`              | `azure`: table for the job store               |
+| `GTAB_AZURE_JOB_QUEUE` | `jobs`              | `azure`: queue of job ids                      |
+| `GTAB_AZURE_QUEUE_VISIBILITY_TIMEOUT` | `900` | `azure`: seconds a claimed job stays hidden   |
 
 ## Running
 
@@ -87,11 +104,16 @@ python -m gtab.worker                                # terminal 2
 
 Open http://localhost:8000/docs to try it.
 
+### With Docker (Azure-shaped)
+
+From the repo root, `docker compose up --build` runs Azurite, the API, the
+worker and the frontend on the `azure` backend. Open http://localhost:3000.
+
 ### Requirements files
 
 | file                     | contents                                        |
 | ------------------------ | --------------------------------------------- |
-| `requirements-base.txt`  | pydantic (shared)                               |
+| `requirements-base.txt`  | pydantic, Azure Storage + identity SDKs (shared) |
 | `requirements-api.txt`   | base + fastapi, uvicorn, python-multipart        |
 | `requirements-worker.txt`| base + basic-pitch, tensorflow, librosa, ...     |
 | `requirements-dev.txt`   | api + worker + pytest, httpx                     |
@@ -102,3 +124,7 @@ Open http://localhost:8000/docs to try it.
 pytest -m "not slow"   # fast unit + route tests
 pytest                 # also runs the basic-pitch model test
 ```
+
+The `azure` backend runs the same contract tests as the others against Azurite
+on `127.0.0.1:10000-10002` (`docker compose up azurite`), and skips them if it
+isn't running. Point `GTAB_TEST_AZURITE_CONNECTION_STRING` elsewhere if needed.
