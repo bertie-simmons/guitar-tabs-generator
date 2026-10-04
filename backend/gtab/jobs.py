@@ -4,16 +4,15 @@ The API creates a `Job`, persists it, and enqueues its id. The worker claims an
 id off the queue, looks the job up, runs the pipeline, and writes status and
 result back. Neither side imports the other; they meet only here.
 
-Two backends:
+Three backends:
 
 * ``memory`` - a dict and a ``queue.Queue`` in one process. Used by the tests,
   and fine if you run the API and worker in the same process.
 * ``file``   - JSON files under ``GTAB_STATE_DIR``. State survives a restart and
   is visible to a separate worker process on the same machine, so you can run
-  ``uvicorn`` in one terminal and ``python -m gtab.worker`` in another. This is
-  the local stand-in for Azure Table Storage (the store) + Queue Storage (the
-  queue); swapping in the Azure SDK clients is the only change those two classes
-  need.
+  ``uvicorn`` in one terminal and ``python -m gtab.worker`` in another.
+* ``azure``  - Table Storage (the store) + Queue Storage (the queue), in
+  `gtab.azure_storage`. Azurite locally, a storage account in Azure.
 
 Selected by ``GTAB_JOBS_BACKEND`` (default ``file``). Tests call `configure()`.
 """
@@ -251,11 +250,27 @@ class FileJobQueue(JobQueue):
 
 
 def _make_store(backend: str, state_dir: Path | str) -> JobStore:
-    return InMemoryJobStore() if backend == "memory" else FileJobStore(state_dir)
+    if backend == "azure":
+        from gtab.azure_storage import make_job_store  # loads the Azure SDK
+
+        return make_job_store()
+    if backend == "file":
+        return FileJobStore(state_dir)
+    if backend == "memory":
+        return InMemoryJobStore()
+    raise ValueError(f"unknown jobs backend {backend!r}")
 
 
 def _make_queue(backend: str, state_dir: Path | str) -> JobQueue:
-    return InMemoryJobQueue() if backend == "memory" else FileJobQueue(state_dir)
+    if backend == "azure":
+        from gtab.azure_storage import make_job_queue  # loads the Azure SDK
+
+        return make_job_queue()
+    if backend == "file":
+        return FileJobQueue(state_dir)
+    if backend == "memory":
+        return InMemoryJobQueue()
+    raise ValueError(f"unknown jobs backend {backend!r}")
 
 
 _store: JobStore | None = None
