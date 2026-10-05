@@ -1,6 +1,9 @@
 """Shared test fixtures."""
 
-from collections.abc import Callable
+import os
+import socket
+import uuid
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import numpy as np
@@ -19,6 +22,66 @@ def memory_backend(tmp_path: Path) -> None:
     upload directory so nothing leaks into the repo."""
     jobs.configure("memory")
     uploads.configure("memory", tmp_path / "uploads")
+
+
+# Azurite's well-known development account - public, not a secret.
+AZURITE = os.environ.get(
+    "GTAB_TEST_AZURITE_CONNECTION_STRING",
+    "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;"
+    "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
+    "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+    "QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;"
+    "TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;",
+)
+
+
+@pytest.fixture(scope="session")
+def azurite() -> str:
+    """Azurite's connection string, or skip if it isn't running.
+
+    Start it with ``docker compose up azurite``.
+    """
+    parts = dict(part.split("=", 1) for part in AZURITE.split(";") if "=" in part)
+    for key in ("BlobEndpoint", "QueueEndpoint", "TableEndpoint"):
+        url = parts[key]
+        host, port = url.split("//", 1)[1].split("/", 1)[0].split(":")
+        try:
+            socket.create_connection((host, int(port)), timeout=0.5).close()
+        except OSError:
+            pytest.skip(f"Azurite not reachable at {url}")
+    return AZURITE
+
+
+@pytest.fixture
+def azure_name() -> str:
+    """A fresh table / queue / container name, so tests don't share state."""
+    return f"t{uuid.uuid4().hex[:20]}"
+
+
+@pytest.fixture
+def azure_services(azurite: str, azure_name: str) -> Iterator[dict]:
+    """Blob, queue and table clients for Azurite. Deletes what the test made."""
+    from gtab import azure_storage
+    from gtab import config
+
+    config_before = config.AZURE_STORAGE_CONNECTION_STRING
+    config.AZURE_STORAGE_CONNECTION_STRING = azurite
+    services = {
+        "blob": azure_storage.blob_service(),
+        "queue": azure_storage.queue_service(),
+        "table": azure_storage.table_service(),
+    }
+    yield services
+    config.AZURE_STORAGE_CONNECTION_STRING = config_before
+    for delete in (
+        lambda: services["blob"].delete_container(azure_name),
+        lambda: services["queue"].delete_queue(azure_name),
+        lambda: services["table"].delete_table(azure_name),
+    ):
+        try:
+            delete()
+        except Exception:  # noqa: BLE001 - it may never have been created
+            pass
 
 
 @pytest.fixture
