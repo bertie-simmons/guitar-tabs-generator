@@ -12,7 +12,7 @@ WORKDIR /app
 COPY requirements-base.txt requirements-api.txt ./
 RUN pip install --no-cache-dir -r requirements-api.txt
 
-COPY gtab/__init__.py gtab/config.py gtab/jobs.py gtab/models.py gtab/uploads.py gtab/
+COPY gtab/__init__.py gtab/config.py gtab/jobs.py gtab/models.py gtab/uploads.py gtab/azure_storage.py gtab/
 COPY gtab/api gtab/api/
 
 # Same uid - api and worker can read and write each other's files

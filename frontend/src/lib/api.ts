@@ -2,9 +2,13 @@
 //
 // Pipeline: POST /upload -> { job_id }; poll GET /status/{job_id} until the
 // status leaves pending/processing; then GET /result/{job_id} for the Tab.
+//
+// Requests go to /api on this app, which forwards them to the backend (see
+// app/api/[...path]/route.ts). NEXT_PUBLIC_API_BASE can still point the
+// browser straight at a backend, e.g. one running without the frontend server.
 
 export const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") || "/api";
 
 export type JobStatus = "pending" | "processing" | "done" | "failed";
 
@@ -81,7 +85,7 @@ export async function uploadVideo(
   } catch (err) {
     if ((err as Error).name === "AbortError") throw err;
     throw new ApiError(
-      `Can't reach the transcription service at ${API_BASE}.`,
+      "Can't reach the transcription service.",
       "network",
     );
   }

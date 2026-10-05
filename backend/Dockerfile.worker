@@ -19,7 +19,7 @@ WORKDIR /app
 COPY requirements-base.txt requirements-worker.txt ./
 RUN pip install --no-cache-dir -r requirements-worker.txt
 
-COPY gtab/__init__.py gtab/config.py gtab/jobs.py gtab/models.py gtab/uploads.py gtab/
+COPY gtab/__init__.py gtab/config.py gtab/jobs.py gtab/models.py gtab/uploads.py gtab/azure_storage.py gtab/
 COPY gtab/pipeline gtab/pipeline/
 COPY gtab/worker gtab/worker/
 

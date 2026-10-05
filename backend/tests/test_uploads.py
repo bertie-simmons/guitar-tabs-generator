@@ -7,8 +7,13 @@ import pytest
 from gtab.uploads import LocalUploadStore, UploadNotFoundError
 
 
-@pytest.fixture
-def store(tmp_path):
+@pytest.fixture(params=["local", "azure"])
+def store(request, tmp_path):
+    if request.param == "azure":
+        from gtab.azure_storage import BlobUploadStore
+
+        services = request.getfixturevalue("azure_services")
+        return BlobUploadStore(services["blob"], request.getfixturevalue("azure_name"))
     return LocalUploadStore(tmp_path / "uploads")
 
 
@@ -31,7 +36,7 @@ def test_delete_removes_and_tolerates_missing(store, tmp_path):
         store.download_to("j1.mp4", tmp_path / "copy.mp4")
 
 
-@pytest.mark.parametrize("name", ["", "../escape.mp4", "sub/dir.mp4"])
+@pytest.mark.parametrize("name", ["", "../escape.mp4", "sub/dir.mp4", "sub\\dir.mp4"])
 def test_rejects_names_outside_the_directory(store, name):
     with pytest.raises(ValueError, match="invalid upload name"):
         store.put(name, io.BytesIO(b"x"))

@@ -14,8 +14,13 @@ def a_job(job_id: str = "j1") -> Job:
 # === store contract, both backends =======================================
 
 
-@pytest.fixture(params=["memory", "file"])
+@pytest.fixture(params=["memory", "file", "azure"])
 def store(request, tmp_path):
+    if request.param == "azure":
+        from gtab.azure_storage import TableJobStore
+
+        services = request.getfixturevalue("azure_services")
+        return TableJobStore(services["table"], request.getfixturevalue("azure_name"))
     return InMemoryJobStore() if request.param == "memory" else FileJobStore(tmp_path)
 
 
@@ -59,8 +64,14 @@ def test_get_returns_a_snapshot_not_a_live_handle(store):
 # === queue contract, both backends =======================================
 
 
-@pytest.fixture(params=["memory", "file"])
+@pytest.fixture(params=["memory", "file", "azure"])
 def jq(request, tmp_path):
+    if request.param == "azure":
+        from gtab.azure_storage import QueueJobQueue
+
+        services = request.getfixturevalue("azure_services")
+        name = request.getfixturevalue("azure_name")
+        return QueueJobQueue(services["queue"], name, visibility_timeout=30)
     return InMemoryJobQueue() if request.param == "memory" else FileJobQueue(tmp_path)
 
 
@@ -95,6 +106,65 @@ def test_release_goes_to_the_back(jq):
     jq.release(jq.claim(timeout=0))  # "a" had a go and failed
     assert jq.claim(timeout=0) == "b"
     assert jq.claim(timeout=0) == "a"
+
+
+def test_claim_waits_up_to_timeout(jq):
+    assert jq.claim(timeout=0.3) is None
+
+
+# === azure-specific behaviour ============================================
+
+
+def test_table_store_holds_a_tab_bigger_than_one_property(azure_services, azure_name):
+    from gtab.azure_storage import TableJobStore
+
+    store = TableJobStore(azure_services["table"], azure_name)
+    store.create(a_job())
+    job = store.get("j1")
+    job.status = "done"
+    job.result = Tab(
+        positions=[TabPosition(string=1 + i % 6, fret=i % 20, time=i * 0.1) for i in range(3000)]
+    )
+    assert len(job.model_dump_json()) > TableJobStore.CHUNK * 2
+    store.save(job)
+    assert store.get("j1") == job
+
+    # Saving a smaller job again must not leave stale chunks behind.
+    job.result = None
+    store.save(job)
+    assert store.get("j1") == job
+
+
+def test_queue_message_reappears_after_visibility_timeout(azure_services, azure_name):
+    """A worker that dies mid-job (never acks) doesn't lose the job."""
+    from gtab.azure_storage import QueueJobQueue
+
+    dead_worker = QueueJobQueue(azure_services["queue"], azure_name, visibility_timeout=1)
+    dead_worker.enqueue("a")
+    assert dead_worker.claim(timeout=0) == "a"
+
+    other = QueueJobQueue(azure_services["queue"], azure_name, visibility_timeout=30)
+    assert other.claim(timeout=0) is None
+    assert other.claim(timeout=5) == "a"
+    other.ack("a")
+    dead_worker.ack("a")  # stale receipt - logged, not raised
+    assert other.claim(timeout=0) is None
+
+
+def test_configure_azure_uses_the_azure_backends(azure_services, azure_name, monkeypatch):
+    from gtab import config
+    from gtab.azure_storage import QueueJobQueue, TableJobStore
+
+    monkeypatch.setattr(config, "AZURE_JOB_TABLE", azure_name)
+    monkeypatch.setattr(config, "AZURE_JOB_QUEUE", azure_name)
+    jobs.configure("azure")
+    assert isinstance(jobs.job_store, TableJobStore)
+    assert isinstance(jobs.job_queue, QueueJobQueue)
+
+
+def test_configure_rejects_unknown_backend():
+    with pytest.raises(ValueError, match="unknown jobs backend"):
+        jobs.configure("azrue")
 
 
 # === file backend survives a "restart" ===================================

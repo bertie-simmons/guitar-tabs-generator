@@ -1,4 +1,25 @@
+x-azure-storage: &azure-storage
+  GTAB_JOBS_BACKEND: azure
+  # azurite's  development account - public and not a secret btw if your reviewing my code
+  GTAB_AZURE_STORAGE_CONNECTION_STRING: >-
+    DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
+
 services:
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    # --skipApiVersionCheck: the SDK can be newer than the Azurite image.
+    command: >-
+      azurite --location /data
+      --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+      --skipApiVersionCheck --loose
+    ports:
+      # exposed so the tests and Storage Explorer can reach it too
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    volumes:
+      - azurite-data:/data
+
   api:
     build:
       context: ./backend
@@ -6,23 +27,30 @@ services:
     ports:
       - "8000:8000"
     environment:
-      GTAB_JOBS_BACKEND: file
-      GTAB_STATE_DIR: /data/state
-      GTAB_UPLOAD_DIR: /data/uploads
+      <<: *azure-storage
       GTAB_CORS_ORIGINS: http://localhost:3000
-    volumes:
-      - gtab-data:/data
+    depends_on:
+      - azurite
+    restart: on-failure # if it beats Azurite to startup
 
   worker:
     build:
       context: ./backend
       dockerfile: Dockerfile.worker
     environment:
-      GTAB_JOBS_BACKEND: file
-      GTAB_STATE_DIR: /data/state
-      GTAB_UPLOAD_DIR: /data/uploads
-    volumes:
-      - gtab-data:/data
+      <<: *azure-storage
+    depends_on:
+      - azurite
+    restart: on-failure # if it beats Azurite to startup
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      GTAB_API_URL: http://api:8000
+    depends_on:
+      - api
 
 volumes:
-  gtab-data:
+  azurite-data:

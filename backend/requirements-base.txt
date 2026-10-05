@@ -1,2 +1,6 @@
-# Shared by the API and the worker: the pydantic models in gtab.models.
+# shared by the API and the worker
 pydantic==2.13.4
+azure-storage-blob==12.30.3
+azure-storage-queue==12.17.0
+azure-data-tables==12.7.0
+azure-identity==1.25.3 # managed identity in Container Apps

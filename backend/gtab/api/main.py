@@ -25,9 +25,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Build the upload store now (the local one creates its directory), so a
-    # bad config fails at startup rather than on the first upload.
+    # bad config fails at startup rather than on the first upload
     uploads.upload_store
+    jobs.job_store
+    jobs.job_queue
     yield
 
 
