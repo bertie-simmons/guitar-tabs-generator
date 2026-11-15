@@ -8,10 +8,7 @@ A web application that generates guitar tablature, from a uploaded video, throug
 
 ## Demo
 
-<video controls>
-  <source src="./videos/Screen-Recording-2026-11-09-135149-edited.mp4" type="video/mp4">
-  [Watch project demo](./videos/Screen-Recording-2026-11-09-135149-edited.mp4)
-</video>
+https://github.com/user-attachments/assets/ec19e8f4-9658-4c15-a0b6-ffb15d4cd814
 
 ### Azure resources
 
